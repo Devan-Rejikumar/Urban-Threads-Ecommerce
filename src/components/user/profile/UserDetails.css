@@ -1,0 +1,272 @@
+/* .user-details-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: relative;
+  }
+  
+  .profile-section {
+    max-width: 800px;
+    width: 100%;
+    margin: 2rem auto;
+    background: #b0b0b0;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  
+  .header-with-edit {
+    background: #464B5C;
+    color: white;
+    margin: 0;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .header-with-edit h2 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .header-with-edit h2::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: #2BEBA9;
+    border-radius: 50%;
+  }
+  
+  .edit-icon-button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+  
+  .edit-icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .user-details {
+    padding: 2rem;
+  }
+  
+  .user-details p {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding: 0.75rem;
+    background: #ffffff;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #464B5C;
+  }
+  
+  .user-details p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .user-details strong {
+    display: inline-block;
+    width: 100px;
+    color: #464B5C;
+    font-weight: 500;
+  }
+  
+  .edit-button {
+    background-color: #FF4D8D;
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    max-width: 400px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin: 1rem auto;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .edit-button:hover {
+    background-color: #ff3576;
+  }
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+  }
+  
+  .modal-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #464B5C;
+  }
+  
+  .modal-content h3 {
+    color: #464B5C;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #464B5C;
+    font-weight: 500;
+  }
+  
+  .form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #b0b0b0;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .cancel-button,
+  .save-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .cancel-button {
+    background-color: #b0b0b0;
+    color: #464B5C;
+  }
+  
+  .save-button {
+    background-color: #2BEBA9;
+    color: #464B5C;
+  }
+  
+  .cancel-button:hover {
+    background-color: #9a9a9a;
+  }
+  
+  .save-button:hover {
+    background-color: #20d194;
+  }
+  
+  .loading,
+  .error {
+    text-align: center;
+    padding: 2rem;
+    color: #464B5C;
+  }
+  
+  .error {
+    background-color: #FFE9EC;
+    color: #FF4757;
+  }
+  
+  @media (max-width: 768px) {
+    .profile-section {
+      margin: 1rem;
+    }
+    
+    .user-details {
+      padding: 1.5rem;
+    }
+  }
+  
+   */
+
+
+   /* ProfileStyles.css */
+
+/* ProfileStyles.css */
+/* ProfileStyles.css */
+.modal-slide-in {
+    animation: slide-in 0.5s forwards;
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+

@@ -1,0 +1,174 @@
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #003344;
+    position: relative;
+    overflow: hidden;
+  }
+  
+
+  .background-dot {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    animation: float linear infinite;
+  }
+  
+  @keyframes float {
+    from {
+      transform: translateY(100vh);
+    }
+    to {
+      transform: translateY(-100vh);
+    }
+  }
+  
+
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 16px;
+    background-color: rgba(0, 68, 85, 0.5);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    color: white;
+    padding: 32px;
+  }
+  
+
+  .card-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  
+  .logo {
+    width: 48px;
+    height: 48px;
+    background-color: #10b981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 auto 24px;
+  }
+  
+  .card-header h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  
+  .card-header p {
+    color: #cbd5e1;
+    font-size: 14px;
+  }
+  
+ 
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .form-group label {
+    color: #e2e8f0;
+    font-size: 14px;
+  }
+  
+  .form-group input {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+  }
+  
+  .form-group input::placeholder {
+    color: #94a3b8;
+  }
+  
+  .form-group input:focus {
+    outline: none;
+    border-color: #10b981;
+  }
+  
+
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .remember-me input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #10b981;
+  }
+  
+  .remember-me label {
+    color: #e2e8f0;
+    font-size: 14px;
+  }
+  
+  .forgot-password {
+    background: none;
+    border: none;
+    color: #34d399;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  .forgot-password:hover {
+    text-decoration: underline;
+  }
+  
+
+  .login-button {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .login-button:hover {
+    background-color: #059669;
+  }
+  
+
+  @media (max-width: 480px) {
+    .login-card {
+      margin: 16px;
+      padding: 24px;
+    }
+    
+    .form-options {
+      flex-direction: column;
+      gap: 16px;
+      align-items: flex-start;
+    }
+  }
+  
+  

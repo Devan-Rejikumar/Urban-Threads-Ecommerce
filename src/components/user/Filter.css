@@ -1,0 +1,68 @@
+.filter-container {
+    font-family: Arial, sans-serif;
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .filter-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .categories h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #343a40;
+    font-size: 18px;
+  }
+  
+  .categories ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .categories li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+  }
+  
+  .categories li:last-child {
+    border-bottom: none;
+  }
+  
+  .category-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  
+  /* Fix for checkbox appearance */
+  .category-checkbox {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: #4a90e2;
+  }
+  
+  .category-name {
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .category-label:hover {
+    background-color: #e9ecef;
+  }
+  
+  

@@ -1,0 +1,128 @@
+.otp-verification {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    text-align: center;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .otp-verification h3 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  
+  .otp-message {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+  
+  .otp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  
+  .otp-input {
+    width: 100%;
+    max-width: 280px;
+    padding: 1rem;
+    font-size: 1.25rem;
+    letter-spacing: 1.2rem;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    transition: border-color 0.2s ease;
+  }
+  
+  .otp-input:focus {
+    outline: none;
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.1);
+  }
+  
+  .otp-input::placeholder {
+    letter-spacing: normal;
+    color: #94a3b8;
+  }
+  
+  .timer {
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+  
+  .expired {
+    color: #ef4444;
+  }
+  
+  .verify-button,
+  .resend-button,
+  .back-button {
+    width: 100%;
+    max-width: 280px;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .verify-button {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .verify-button:hover:not(:disabled) {
+    background: #2563eb;
+  }
+  
+  .verify-button:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+  }
+  
+  .resend-button {
+    background: transparent;
+    color: #3b82f6;
+  }
+  
+  .resend-button:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
+  
+  .back-button {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  
+  .back-button:hover:not(:disabled) {
+    background: #e2e8f0;
+  }
+  
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+  }
+  
+  .success-message {
+    color: #22c55e;
+    font-size: 0.875rem;
+  }
+  
+  /* Loading state styles */
+  .verify-button:disabled,
+  .resend-button:disabled,
+  .back-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  
