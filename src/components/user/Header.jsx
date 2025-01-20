@@ -5,18 +5,19 @@ import { useNavigate, Link } from 'react-router-dom';
 import { userLogout } from '/src/redux/slices/userAuthSlice.js';
 import axios from 'axios';
 import './Header.css';
+import AdvancedSearch from './AdvancedSearch';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const { user, isAuthenticated } = useSelector(state => state.userAuth);
 
   const handleLogout = async () => {
     try {
       localStorage.removeItem('token');
-     
+
       const response = await axios.post('/api/auth/logout', {}, {
         withCredentials: true
       });
@@ -51,16 +52,22 @@ const Header = () => {
               <li><a href="/">HOME</a></li>
               <li><a href="/shop">SHOP</a></li>
               <li><a href="/about">ABOUT</a></li>
-              <li><a href="/contact">CONTACT</a></li>          
+              <li><a href="/contact">CONTACT</a></li>
             </ul>
           </div>
 
           <div className="search-container">
-            <Search className="search-icon" />
+            {/* <Search className="search-icon" />
             <input
               type="text"
               placeholder="Search for products, brands and more"
               className="search-input"
+            /> */}
+            <AdvancedSearch
+              onSearch={(item) => {
+                navigate(`/product/${item._id}`);
+              }}
+
             />
           </div>
 
@@ -104,8 +111,8 @@ const Header = () => {
                       </Link>
                     </div>
                     <div className="dropdown-buttons">
-                      <button 
-                        onClick={handleLogout} 
+                      <button
+                        onClick={handleLogout}
                         className="auth-button"
                       >
                         LOGOUT

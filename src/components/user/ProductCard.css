@@ -1,5 +1,8 @@
 .product-card {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   
   .product-image {
@@ -64,6 +67,48 @@
     font-weight: 600;
     color: #333;
   } 
+
+  .price-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; /* Space between sale price and original price if both exist */
+    width: 100%;
+    margin-top: 8px;
+}
+
+.product-price {
+    margin: 0;
+    font-weight: 600;
+    color: #333;
+}
+
+.sale-price {
+    color: #ff4444; /* Or your preferred sale price color */
+}
+
+.original-price {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 0.9em;
+}
+
+.product-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.product-name {
+    margin: 10px 0 5px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.product-rating {
+    margin: 5px 0;
+}
   
 
    

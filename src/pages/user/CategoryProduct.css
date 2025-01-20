@@ -52,4 +52,37 @@
     color: #666;
   }
   
+  .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
   
+  .category-title {
+    flex: 1;
+  }
+  
+  .sort-container {
+    margin-left: 1rem;
+  }
+  
+  .sort-select {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    background-color: white;
+    font-size: 0.875rem;
+    min-width: 200px;
+    cursor: pointer;
+  }
+  
+  .sort-select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.2);
+  }
+  
+  .sort-select option {
+    padding: 0.5rem;
+  }

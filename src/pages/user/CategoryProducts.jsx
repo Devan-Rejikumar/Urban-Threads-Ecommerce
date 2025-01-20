@@ -1,15 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { ProductCard } from '../../components/user/ProductCard';
-import Filter from '../../components/user/Filter';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import './CategoryProduct.css';
 import Breadcrumbs from '../../components/breadcrumbs/user/userBreadcrumbs';
-
-
+import axiosInstance from '../../utils/axiosInstance';
 
 const CategoryProducts = () => {
   const { categoryId } = useParams();
@@ -17,63 +13,92 @@ const CategoryProducts = () => {
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOption, setSortOption] = useState("featured");
 
-  
-  const [selectedGender, setSelectedGender] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState([]);
-
- 
-  const categories = [
-    { id: "sports-shoes", name: "Sports Shoes", count: 9049 },
-    { id: "tshirts", name: "Tshirts", count: 8877 },
-    { id: "track-pants", name: "Track Pants", count: 4601 },
-    { id: "innerwear-vests", name: "Innerwear Vests", count: 3317 },
-    { id: "shorts", name: "Shorts", count: 3119 },
-    { id: "jackets", name: "Jackets", count: 1056 },
-    { id: "tracksuits", name: "Tracksuits", count: 1052 },
-    { id: "socks", name: "Socks", count: 837 },
+  const sortOptions = [
+    { value: "featured", label: "Featured" },
+    { value: "popularity", label: "Popularity" },
+    { value: "priceHighToLow", label: "Price: High to Low" },
+    { value: "priceLowToHigh", label: "Price: Low to High" },
+    { value: "avgRating", label: "Average Rating" },
+    { value: "nameAZ", label: "Name: A to Z" },
+    { value: "nameZA", label: "Name: Z to A" },
   ];
 
   useEffect(() => {
-    const fetchCategoryProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/products/category/${categoryId}`,
-          { withCredentials: true }
-        );
-        
-        if (response.data) {
-          console.log('Products:', response.data.products); 
-          response.data.products.forEach(product => {
-            console.log('Product ID:', product._id); 
-          });
-          setProducts(response.data.products || []);
-          setCategory(response.data.category);
+        const productResponse = await axiosInstance.get(`/products/category/${categoryId}`);
+
+        if (productResponse.data) {
+          setProducts(productResponse.data.products || []);
+          setCategory(productResponse.data.category);
         }
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching products:', err);
-        setError(err.response?.data?.error || 'Failed to fetch products');
+        console.error('Error fetching data:', err);
+        setError(err.response?.data?.error || 'Failed to fetch data');
         setLoading(false);
       }
     };
-  
-    if (categoryId) {
-      fetchCategoryProducts();
+    if(categoryId){
+      fetchData();
     }
   }, [categoryId]);
 
-  const handleClearAll = () => {
-    setSelectedGender("");
-    setSelectedCategories([]);
+  const getEffectivePrice = (product) => {
+    return product.salePrice || product.originalPrice || 0;
   };
 
+  const sortProducts = (products) => {
+    const sortedProducts = [...products];
 
-  const filteredProducts = products.filter((product) => {
-    const genderMatch = !selectedGender || product.gender === selectedGender;
-    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.categoryId);
-    return genderMatch && categoryMatch;
-  });
+    switch (sortOption) {
+      case "priceHighToLow":
+        return sortedProducts.sort((a, b) =>
+          getEffectivePrice(b) - getEffectivePrice(a)
+        );
+
+      case "priceLowToHigh":
+        return sortedProducts.sort((a, b) =>
+          getEffectivePrice(a) - getEffectivePrice(b)
+        );
+
+      case "nameAZ":
+        return sortedProducts.sort((a, b) =>
+          (a.name || '').localeCompare(b.name || '')
+        );
+
+      case "nameZA":
+        return sortedProducts.sort((a, b) =>
+          (b.name || '').localeCompare(a.name || '')
+        );
+
+      case "avgRating":
+        return sortedProducts.sort((a, b) => {
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          return ratingB - ratingA;
+        });
+
+      case "popularity":
+        return sortedProducts.sort((a, b) => {
+          const getPopularityScore = (product) => {
+            const rating = product.rating || 0;
+            const reviews = product.reviews?.length || 0;
+            const sales = product.totalSales || 0;
+            return (rating * 0.4) + (reviews * 0.3) + (sales * 0.3);
+          };
+          return getPopularityScore(b) - getPopularityScore(a);
+        });
+
+      case "featured":
+      default:
+        return sortedProducts;
+    }
+  };
+
+  const sortedProducts = sortProducts(products);
 
   const renderContent = () => {
     if (loading) {
@@ -98,28 +123,34 @@ const CategoryProducts = () => {
         <Breadcrumbs categoryName={category?.name} />
         <main className="main-container">
           <div className="category-header">
-            <h1>{category?.name || 'Category Products'}</h1>
-            <p>{filteredProducts.length} products found</p>
+            <div className="category-title">
+              <h1>{category?.name || 'Category Products'}</h1>
+              <p>{sortedProducts.length} products found</p>
+            </div>
+            <div className="sort-container">
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="sort-select"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="content-container">
-            <Filter
-              selectedGender={selectedGender}
-              setSelectedGender={setSelectedGender}
-              categories={categories}
-              selectedCategories={selectedCategories}
-              setSelectedCategories={setSelectedCategories}
-              onClearAll={handleClearAll}
-            />
-
             <div className="products-container">
-              {filteredProducts.length === 0 ? (
+              {sortedProducts.length === 0 ? (
                 <div className="no-products">
                   <p>No products found in this category.</p>
                 </div>
               ) : (
                 <div className="products-grid">
-                  {filteredProducts.map((product) => (
+                  {sortedProducts.map((product) => (
                     <ProductCard
                       key={product._id}
                       {...product}
@@ -140,4 +171,3 @@ const CategoryProducts = () => {
 };
 
 export default CategoryProducts;
-

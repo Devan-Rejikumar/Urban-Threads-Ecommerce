@@ -4,7 +4,6 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { adminLogout as logout } from '../../../redux/slices/adminAuthSlice';
 import './AdminDashboard.css';
-import Cookies from 'js-cookie';
 import axios from 'axios';
 
 const AdminDashboard = () => {

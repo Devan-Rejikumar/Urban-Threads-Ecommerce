@@ -1,21 +1,4 @@
-// export const ProductCard = ({ images, name, price, isNew }) => {
-//   return (
-//     <div className="product-card">
-//       <div className="product-image">
-//         <img src={images?.[0]} alt={name} /> 
-//         {isNew && <span className="new-tag">New</span>}
-//         <div className="hover-overlay">
-//           <button className="quick-view-btn">Quick View</button>
-//         </div>
-//       </div>
-//       <h5 className="name-center">{name}</h5>
-      
-//     </div>
-//   );
-// };
-// ProductCard.jsx
-// ProductCard.jsx
-// ProductCard.jsximport React, { useState } from "react";
+
 import { useState } from 'react';
 import './ProductCard.css';
 import { useNavigate } from 'react-router-dom';
@@ -96,7 +79,7 @@ export const ProductCard = ({
         <div className="price-container">
           {salePrice ? (
             <>
-              {/* <p className="product-price sale-price">₹{salePrice.toFixed(2)}</p> */}
+              <p className="product-price sale-price">₹{salePrice.toFixed(2)}</p>
               {/* <p className="product-price original-price">₹{originalPrice.toFixed(2)}</p> */}
             </>
           ) : (

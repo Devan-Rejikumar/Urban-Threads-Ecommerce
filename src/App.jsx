@@ -20,6 +20,7 @@ import AddressManagement from './components/user/profile/Address.jsx';
 import ForgotPasswordForm from './components/user/ForgotPassword.jsx';
 import ResetPasswordForm from './components/user/ResetPassword.jsx';
 import ChangePassword from './components/user/profile/ChangePassword.jsx';
+import Shop from './components/user/Shop.jsx';
 
 
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path='/profile/details' element={<UserDetails />} />
         <Route path="/profile/address" element={<AddressManagement />} />
+        <Route path="/shop" element={<Shop   />} />
         <Route
           path="/login"
           element={
