@@ -1,0 +1,31 @@
+/* Modal slide-in animation */
+.modal-dialog-end {
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+  }
+  
+  .show .modal-dialog-end {
+    transform: translateX(0);
+  }
+  
+  /* Custom scrollbar */
+  .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  .modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+  
+  /* Prevent body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden;
+  }
+  .modal-dialog-end {
+    transform: none !important;
+  }

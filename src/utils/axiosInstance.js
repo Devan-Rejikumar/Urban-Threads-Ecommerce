@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token') || document.cookie.split('token=')[1];
         console.log('Token being sent:', token);
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -26,7 +26,7 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         if(error.response?.status === 401){
             localStorage.removeItem('token');
             window.location.href = '/login'

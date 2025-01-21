@@ -21,6 +21,7 @@ import ForgotPasswordForm from './components/user/ForgotPassword.jsx';
 import ResetPasswordForm from './components/user/ResetPassword.jsx';
 import ChangePassword from './components/user/profile/ChangePassword.jsx';
 import Shop from './components/user/Shop.jsx';
+import CartPage from './pages/user/CartPage.jsx';
 
 
 
@@ -58,6 +59,7 @@ function App() {
   <Route path="/forgot-password" element={<ForgotPasswordForm />} />
   <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
   <Route path="/profile/change-password" element={<ChangePassword />} />
+  <Route path="/cart" element={<CartPage />} />
 
 
         <Route

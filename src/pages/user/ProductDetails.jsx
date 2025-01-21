@@ -1,17 +1,21 @@
-
-
-
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ProductCard } from '../../components/user/ProductCard';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import './ProductDetails.css';
-// import Breadcrumbs from '../../components/user/userBreadcrumbs';
 import Breadcrumbs from '../../components/breadcrumbs/user/userBreadcrumbs';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart, setCart } from '../../redux/slices/cartSlice';
+import { toast } from 'react-toastify';
+import Cart from './Cart';
+import axiosInstance from '../../utils/axiosInstance';
 
 const ProductDetail = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useSelector(state => state.userAuth);
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
@@ -19,27 +23,24 @@ const ProductDetail = () => {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [showCart, setShowCart] = useState(false);
+  const { cartItems } = useSelector(state => state.cart?.items || []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Fetching product with ID:', productId);
         const productResponse = await axios.get(
           `http://localhost:5000/api/products/${productId}`,
           { withCredentials: true }
         );
-        console.log('Product data received:', productResponse.data);
         setProduct(productResponse.data);
 
         const allProductsResponse = await axios.get('http://localhost:5000/api/products',
           { withCredentials: true }
         );
-        console.log('All products received:', allProductsResponse.data);
-
-       
         setAllProducts(allProductsResponse.data);
-        
-
         setLoading(false);
       } catch (err) {
         console.error('Error fetching product:', err);
@@ -51,8 +52,84 @@ const ProductDetail = () => {
     fetchData();
   }, [productId]);
 
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+  
+    if (!selectedSize) {
+      toast.error('Please select a size');
+      return;
+    }
+  
+    const selectedVariant = product.variants.find(v => v.size === selectedSize);
+    if (!selectedVariant || selectedVariant.stock < 1) {
+      toast.error('Selected size is out of stock');
+      return;
+    }
 
+    const existingCartItem = (cartItems || []).find(item => 
+      item.productId === product._id && item.selectedSize === selectedSize
+    );
 
+    const totalQuantity = (existingCartItem ? existingCartItem.quantity : 0) + quantity;
+
+    if(totalQuantity > 5) {
+      toast.error('Maximum limit is 5 items per product');
+      setShowCart(true); 
+      return;
+    }
+  
+    if(quantity > selectedVariant.stock || quantity > 5){
+      toast.error('Maximum quantity exceeded');
+      setShowCart(true)
+      return;
+    }
+   
+    try {
+      const productToAdd = {
+        productId: product._id,
+        selectedSize: selectedSize,
+        quantity: quantity
+      };
+    
+      // First add the item to cart
+      await axiosInstance.post('/cart/add', productToAdd);
+      
+      // Then fetch the updated cart data
+      const updatedCartResponse = await axiosInstance.get('/cart');
+      if (updatedCartResponse.data) {
+        // Map the cart items to match Redux store structure
+        const cartItems = updatedCartResponse.data.items.map(item => ({
+          productId: item.productId._id,
+          name: item.productId.name,
+          price: item.price,
+          selectedSize: item.selectedSize,
+          quantity: item.quantity,
+          image: item.productId.images[0]?.url || item.productId.images[0],
+          stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
+          maxPerPerson: 5
+        }));
+        
+        dispatch(setCart(cartItems));
+        setShowCart(true);
+        toast.success('Added to cart successfully');
+      }
+    } catch (error) {
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.error || 'Failed to add to cart';
+        toast.error(errorMessage);
+      } else if (error.response?.status === 401) {
+        toast.error('Please login to continue');
+        navigate('/login');
+      } else {
+        toast.error('An error occurred while adding to cart');
+      }
+      console.error('Error details:', error.response || error);
+    }
+  };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -64,29 +141,30 @@ const ProductDetail = () => {
     salePrice,
     images,
     rating,
-    availability,
-    description
+    description,
+    variants
   } = product;
 
   const relatedProducts = allProducts
     .filter(p => p._id !== productId)
-    .slice(0, 4); 
+    .slice(0, 4);
 
-
-  
   const reviews = [
     { author: "Belwin Raphel", rating: 5, comment: "Great product! Highly recommended." },
     { author: "Al Ameen", rating: 4, comment: "Good quality, but a bit pricey." },
     { author: "Nanda Kumar", rating: 5, comment: "Excellent service and fast delivery." }
   ];
 
- 
-
-
   const renderStars = (rating) => {
     return [...Array(5)].map((_, i) => (
       <span key={i} className={`star ${i < rating ? 'filled' : ''}`}>★</span>
     ));
+  };
+
+  const getMaxQuantity = (size) => {
+    const variant = variants.find(v => v.size === size);
+    if (!variant) return 0;
+    return Math.min(variant.stock, product.maxPerPerson || 5);
   };
 
   return (
@@ -98,7 +176,6 @@ const ProductDetail = () => {
       />
       <div className="product-detail-container">
         <div className="product-detail-grid">
-          
           <div className="image-gallery">
             <div
               className={`main-image-container ${isZoomed ? 'zoomed' : ''}`}
@@ -128,12 +205,9 @@ const ProductDetail = () => {
             </div>
           </div>
 
-        
           <div className="product-info">
             <div className="rating-container">
-              <div className="stars">
-                {renderStars(rating)}
-              </div>
+              <div className="stars">{renderStars(rating)}</div>
               <span className="rating-count">{reviews.length} Ratings</span>
             </div>
 
@@ -145,37 +219,86 @@ const ProductDetail = () => {
                 {salePrice && (
                   <>
                     <span className="original-price">MRP ₹{originalPrice}</span>
-                    <span className="discount">({Math.round((originalPrice - salePrice) / originalPrice * 100)}% OFF)</span>
+                    <span className="discount">
+                      ({Math.round((originalPrice - salePrice) / originalPrice * 100)}% OFF)
+                    </span>
                   </>
                 )}
               </div>
               <p className="tax-info">inclusive of all taxes</p>
             </div>
 
-            <div className="size-section">
-              <div className="size-header">
-                <h3 className="section-title">SELECT SIZE</h3>
-                <button className="size-chart-button">SIZE CHART</button>
-              </div>
-              <div className="size-options">
-                {['S', 'M', 'L', 'XL'].map((size) => (
+            <div className="size-options">
+              {["S", "M", "L", "XL", "XXL"].map((size) => {
+                const variantExists = product.variants.find((v) => v.size === size);
+                const isAvailable = variantExists && variantExists.stock > 0;
+
+                return (
                   <button
                     key={size}
-                    className={`size-button ${(size === 'L' || size === 'XL') ? 'disabled' : ''}`}
-                    disabled={size === 'L' || size === 'XL'}
+                    onClick={() => {
+                      if (isAvailable) {
+                        setSelectedSize(size);
+                        setQuantity(1);
+                      }
+                    }}
+                    className={`size-button 
+                      ${!isAvailable ? 'unavailable' : ''} 
+                      ${selectedSize === size ? 'selected' : ''}`}
+                    disabled={!isAvailable}
                   >
-                    {size}
-                    {(size === 'S' || size === 'M') && (
-                      <span className="stock-label">1 left</span>
+                    <span className="size-text">{size}</span>
+                    {!isAvailable && <div className="strike-through"></div>}
+                    {isAvailable && variantExists.stock <= 5 && (
+                      <span className="stock-label">{variantExists.stock} left</span>
                     )}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
+            {selectedSize && (
+              <div className="quantity-selector">
+                <span>QUANTITY:</span>
+                <div className="quantity-controls">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="quantity-btn"
+                  >
+                    -
+                  </button>
+                  <span className="quantity-display">{quantity}</span>
+                  <button
+                    onClick={() => {
+                      const maxQty = getMaxQuantity(selectedSize);
+                      setQuantity((q) => Math.min(maxQty, q + 1));
+                    }}
+                    disabled={quantity >= getMaxQuantity(selectedSize)}
+                    className="quantity-btn"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <Cart
+              show={showCart}
+              onHide={() => setShowCart(false)}
+            />
+
             <div className="action-buttons">
-              <button className="add-to-bag">
-                ADD TO BAG
+              <button
+                className="add-to-bag"
+                onClick={handleAddToCart}
+                disabled={!selectedSize || !isAuthenticated}
+              >
+                {!isAuthenticated
+                  ? 'LOGIN TO ADD'
+                  : !selectedSize
+                    ? 'SELECT SIZE'
+                    : 'ADD TO BAG'}
               </button>
               <button className="wishlist">
                 <span className="heart-icon">♡</span>
@@ -183,17 +306,11 @@ const ProductDetail = () => {
               </button>
             </div>
 
-            <span className={`availability-badge ${availability}`}>
-              {availability === 'out_of_stock'
-                ? 'Out of Stock'
-                : availability === 'low_stock'
-                  ? 'Low Stock'
-                  : 'In Stock'}
-            </span>
+            <div className="product-description">
+              <h3>Product Description</h3>
+              <p>{description}</p>
+            </div>
 
-            <p className="product-description">{description}</p>
-
-           
             <div className="reviews-section">
               <h2>Customer Reviews</h2>
               {reviews.length > 0 ? (
@@ -201,9 +318,7 @@ const ProductDetail = () => {
                   {reviews.map((review, idx) => (
                     <div key={idx} className="review">
                       <div className="review-header">
-                        <div className="review-rating">
-                          {renderStars(review.rating)}
-                        </div>
+                        <div className="review-rating">{renderStars(review.rating)}</div>
                         <span className="review-author">{review.author}</span>
                       </div>
                       <p className="review-comment">{review.comment}</p>
@@ -217,7 +332,6 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        
         {relatedProducts.length > 0 && (
           <div className="related-products">
             <h2>Related Products</h2>
@@ -239,6 +353,7 @@ const ProductDetail = () => {
       <Footer />
     </>
   );
+
 };
 
 export default ProductDetail;

@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import userAuthReducer from '../slices/userAuthSlice';
 import adminAuthReducer from '../slices/adminAuthSlice';
+import cartSlice from '../slices/cartSlice';
 
 const userPersistConfig = {
     key: 'userAuth',
@@ -22,7 +23,8 @@ const persistedAdminReducer = persistReducer(adminPersistConfig, adminAuthReduce
 export const store = configureStore({
     reducer: {
         userAuth: persistedUserReducer,
-        adminAuth: persistedAdminReducer
+        adminAuth: persistedAdminReducer,
+        cart : cartSlice
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
