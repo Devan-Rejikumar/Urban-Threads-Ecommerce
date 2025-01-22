@@ -6,9 +6,15 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './shop.css';
 import Header from './Header';
 import Footer from './Footer';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
+import axiosInstance from '../../utils/axiosInstance';
+import { setWishlist, removeFromWishlist } from '../../redux/slices/whishlistSlice';
 
 const Shop = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector(state => state.userAuth);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -16,11 +22,22 @@ const Shop = () => {
   const [sortOption, setSortOption] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const wishlistItems = useSelector(state => state.wishlist.items);
+  const [wishlistState, setWishlistState] = useState({});  // Local state for heart colors
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    // Initialize wishlist state based on Redux wishlist
+    const initialWishlistState = {};
+    wishlistItems.forEach(item => {
+      initialWishlistState[item._id] = true;
+    });
+    setWishlistState(initialWishlistState);
+  }, [wishlistItems]);
 
   const fetchCategories = async () => {
     try {
@@ -51,6 +68,40 @@ const Shop = () => {
     }
   };
 
+  const handleWishlistClick = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to wishlist');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const isInWishlist = wishlistState[product._id];
+      
+      if (isInWishlist) {
+        // Remove from wishlist
+        await axiosInstance.delete(`/wishlist/remove/${product._id}`);
+        setWishlistState(prev => ({ ...prev, [product._id]: false }));
+        dispatch(removeFromWishlist(product._id));
+        toast.success('Removed from wishlist');
+      } else {
+        // Add to wishlist
+        const response = await axiosInstance.post('/wishlist/add', { 
+          productId: product._id 
+        });
+        setWishlistState(prev => ({ ...prev, [product._id]: true }));
+        dispatch(setWishlist(response.data));
+        toast.success('Added to wishlist');
+      }
+    } catch (error) {
+      console.error('Wishlist error:', error);
+      toast.error('Error updating wishlist');
+    }
+  };
+
   const handleCategoryChange = (categoryId) => {
     setSelectedCategories(prev => {
       if (prev.includes(categoryId)) {
@@ -65,23 +116,19 @@ const Shop = () => {
     navigate(`/product/${productId}`);
   };
 
-  // Filter products based on categories and search
-  const filteredProducts = products
-    .filter(product => {
-      // Category filter
-      const categoryMatch = selectedCategories.length === 0 || 
-        selectedCategories.includes(product.category._id);
-      
-      // Search filter
-      const searchMatch = product.name.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-        product.description?.toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      
-      return categoryMatch && searchMatch;
-    });
+  // Filter and sort products (unchanged)
+  const filteredProducts = products.filter(product => {
+    const categoryMatch = selectedCategories.length === 0 ||
+      selectedCategories.includes(product.category._id);
 
-  // Sort filtered products
+    const searchMatch = product.name.toLowerCase()
+      .includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    return categoryMatch && searchMatch;
+  });
+
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortOption) {
       case 'price-asc':
@@ -92,11 +139,10 @@ const Shop = () => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       case 'featured':
       default:
-        return 0; // Keep original order for featured
+        return 0;
     }
   });
 
-  // Filter categories for search
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
   );
@@ -104,11 +150,11 @@ const Shop = () => {
   return (
     <div className="shop-container">
       <Header />
-
       <div className="container py-4">
+        {/* Sidebar remains unchanged */}
         <div className="row">
-          {/* Sidebar */}
           <div className="col-lg-3">
+            {/* Categories section - unchanged */}
             <div className="sidebar">
               <h2 className="h5 mb-4">CATEGORIES</h2>
               <div className="mb-3">
@@ -150,7 +196,7 @@ const Shop = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <select 
+                <select
                   className="form-select w-auto"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
@@ -176,26 +222,29 @@ const Shop = () => {
             ) : (
               <div className="row g-4">
                 {sortedProducts.map((product) => (
-                  <div 
-                    key={product._id} 
+                  <div
+                    key={product._id}
                     className="col-md-6 col-lg-4"
                     onClick={() => handleProductClick(product._id)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="product-card">
                       <div className="product-image-container">
-                        <img 
+                        <img
                           src={product.images[0] || "/placeholder.svg"}
                           alt={product.name}
                           className="product-image"
                         />
-                        <button 
+                        <button
                           className="wishlist-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
+                          onClick={(e) => handleWishlistClick(e, product)}
+                          style={{ color: wishlistState[product._id] ? 'red' : 'inherit' }}
                         >
-                          <Heart size={20} />
+                          <Heart
+                            size={20}
+                            fill={wishlistState[product._id] ? "red" : "none"}
+                            color={wishlistState[product._id] ? "red" : "currentColor"}
+                          />
                         </button>
                       </div>
                       <div className="product-info">

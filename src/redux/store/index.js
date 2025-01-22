@@ -4,6 +4,7 @@ import storage from 'redux-persist/lib/storage';
 import userAuthReducer from '../slices/userAuthSlice';
 import adminAuthReducer from '../slices/adminAuthSlice';
 import cartSlice from '../slices/cartSlice';
+import wishlistReducer from '../slices/whishlistSlice';
 
 const userPersistConfig = {
     key: 'userAuth',
@@ -24,7 +25,8 @@ export const store = configureStore({
     reducer: {
         userAuth: persistedUserReducer,
         adminAuth: persistedAdminReducer,
-        cart : cartSlice
+        cart : cartSlice,
+        wishlist : wishlistReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

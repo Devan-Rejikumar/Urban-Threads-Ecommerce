@@ -1,0 +1,55 @@
+.wishlist-container {
+    padding: 2rem;
+  }
+  
+  .product-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 1rem;
+  }
+  
+  .table th {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .table td {
+    vertical-align: middle;
+  }
+  
+  .stock-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+  
+  .stock-status.in-stock {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  
+  .stock-status.out-of-stock {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-remove {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.card:hover .btn-remove {
+    opacity: 1;
+}

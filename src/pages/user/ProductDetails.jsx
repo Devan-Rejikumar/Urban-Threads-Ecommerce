@@ -11,6 +11,8 @@ import { addToCart, setCart } from '../../redux/slices/cartSlice';
 import { toast } from 'react-toastify';
 import Cart from './Cart';
 import axiosInstance from '../../utils/axiosInstance';
+import { addToWishlist, removeFromWishlist, setWishlist } from '../../redux/slices/whishlistSlice';
+import { Heart } from 'lucide-react';
 
 const ProductDetail = () => {
   const dispatch = useDispatch();
@@ -27,6 +29,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [showCart, setShowCart] = useState(false);
   const { cartItems } = useSelector(state => state.cart?.items || []);
+  const wishlistItems = useSelector(state => state.wishlist.items);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,52 +55,68 @@ const ProductDetail = () => {
     fetchData();
   }, [productId]);
 
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await axiosInstance.get('/wishlist');
+          // Assuming the response data is an array of products
+          dispatch(setWishlist(response.data));
+        } catch (error) {
+          console.error('Error fetching wishlist:', error);
+        }
+      }
+    };
+
+    fetchWishlist();
+  }, [isAuthenticated, dispatch]);
+
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;
     }
-  
+
     if (!selectedSize) {
       toast.error('Please select a size');
       return;
     }
-  
+
     const selectedVariant = product.variants.find(v => v.size === selectedSize);
     if (!selectedVariant || selectedVariant.stock < 1) {
       toast.error('Selected size is out of stock');
       return;
     }
 
-    const existingCartItem = (cartItems || []).find(item => 
+    const existingCartItem = (cartItems || []).find(item =>
       item.productId === product._id && item.selectedSize === selectedSize
     );
 
     const totalQuantity = (existingCartItem ? existingCartItem.quantity : 0) + quantity;
 
-    if(totalQuantity > 5) {
+    if (totalQuantity > 5) {
       toast.error('Maximum limit is 5 items per product');
-      setShowCart(true); 
+      setShowCart(true);
       return;
     }
-  
-    if(quantity > selectedVariant.stock || quantity > 5){
+
+    if (quantity > selectedVariant.stock || quantity > 5) {
       toast.error('Maximum quantity exceeded');
       setShowCart(true)
       return;
     }
-   
+
     try {
       const productToAdd = {
         productId: product._id,
         selectedSize: selectedSize,
         quantity: quantity
       };
-    
+
       // First add the item to cart
       await axiosInstance.post('/cart/add', productToAdd);
-      
+
       // Then fetch the updated cart data
       const updatedCartResponse = await axiosInstance.get('/cart');
       if (updatedCartResponse.data) {
@@ -112,7 +131,7 @@ const ProductDetail = () => {
           stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
           maxPerPerson: 5
         }));
-        
+
         dispatch(setCart(cartItems));
         setShowCart(true);
         toast.success('Added to cart successfully');
@@ -166,6 +185,38 @@ const ProductDetail = () => {
     if (!variant) return 0;
     return Math.min(variant.stock, product.maxPerPerson || 5);
   };
+
+  const handleWishlistClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+        toast.error('Please login to add items to wishlist');
+        navigate('/login');
+        return;
+    }
+
+    try {
+        const isItemInWishlist = wishlistItems.some(item => item._id === product._id);
+        
+        if (isItemInWishlist) {
+            await axiosInstance.delete(`/wishlist/remove/${product._id}`);
+            dispatch(removeFromWishlist(product._id));
+            toast.success('Removed from wishlist');
+        } else {
+            // Add to wishlist
+            const response = await axiosInstance.post('/wishlist/add', { 
+                productId: product._id 
+            });
+            
+            dispatch(setWishlist(response.data.wishlist));
+            toast.success('Added to wishlist');
+        }
+    } catch (error) {
+        console.error('Wishlist error:', error);
+        toast.error(error.response?.data?.error || 'Error updating wishlist');
+    }
+};
 
   return (
     <>
@@ -300,8 +351,15 @@ const ProductDetail = () => {
                     ? 'SELECT SIZE'
                     : 'ADD TO BAG'}
               </button>
-              <button className="wishlist">
-                <span className="heart-icon">♡</span>
+              <button
+                className="wishlist"
+                onClick={handleWishlistClick}
+                style={{ cursor: 'pointer' }}
+              >
+                <Heart
+                  size={20}
+                  fill={(wishlistItems || []).some(item => item._id === product._id) ? "currentColor" : "none"}
+                />
                 WISHLIST
               </button>
             </div>
