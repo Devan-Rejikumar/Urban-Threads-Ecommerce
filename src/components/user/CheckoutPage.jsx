@@ -6,6 +6,8 @@ import axiosInstance from '../../utils/axiosInstance';
 import Header from './Header';
 import Footer from './Footer';
 import AddressModal from './AddressForm';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
     <div
@@ -123,12 +125,12 @@ const Checkout = () => {
     const handlePlaceOrder = async () => {
         // Validate selection
         if (!selectedAddress) {
-            alert('Please select a shipping address');
+            toast.error('Please select a shipping address');
             return;
         }
 
         if (!selectedPayment) {
-            alert('Please select a payment method');
+            toast.error('Please select a payment method');
             return;
         }
 
@@ -151,6 +153,9 @@ const Checkout = () => {
                 // Clear cart after successful order
                 dispatch({ type: 'cart/clearCart' });
 
+                // Show success toast
+                toast.success('Order placed successfully!');
+
                 // Navigate to order confirmation
                 navigate('/order-confirmation', {
                     state: {
@@ -160,7 +165,7 @@ const Checkout = () => {
             }
         } catch (error) {
             console.error('Order placement failed:', error);
-            alert('Failed to place order. Please try again.');
+            toast.error('Failed to place order. Please try again.');
         }
     };
 

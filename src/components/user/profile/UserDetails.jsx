@@ -22,22 +22,33 @@ const UserDetails = () => {
     useEffect(() => {
         const fetchUserDetails = async () => {
             try {
-                const response = await axiosInstance.get('/auth/profile')
-                setUserDetails(response.data)
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    setError('Not authenticated');
+                    return;
+                }
+
+                const response = await axiosInstance.get('/auth/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setUserDetails(response.data);
                 setFormData({
                     firstName: response.data.firstName,
                     lastName: response.data.lastName,
                     email: response.data.email,
                     phone: response.data.phone
-                })
-                setLoading(false)
+                });
+                setLoading(false);
             } catch (error) {
-                setError('Failed to fetch user details')
-                setLoading(false)
+                console.error('Error fetching user details:', error);
+                setError(error.response?.data?.message || 'Failed to fetch user details');
+                setLoading(false);
             }
-        }
-        fetchUserDetails()
-    }, [])
+        };
+        fetchUserDetails();
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -48,15 +59,30 @@ const UserDetails = () => {
     }
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
         try {
-            const response = await axiosInstance.put('/auth/profile/update', formData)
-            setUserDetails(response.data)
-            setIsModalOpen(false)
-            toast.success('User details updated successfully')
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Not authenticated');
+                return;
+            }
+
+            const response = await axiosInstance.put('/auth/profile/update', formData);
+            
+            if (response.data.user) {
+                setUserDetails(response.data.user);
+                setIsModalOpen(false);
+                toast.success('Profile updated successfully');
+                
+         
+                const userResponse = await axiosInstance.get('/auth/profile');
+                if (userResponse.data) {
+                    setUserDetails(userResponse.data);
+                }
+            }
         } catch (error) {
-            console.error('Failed to update user details:', error)
-            toast.error('Failed to update user details')
+            console.error('Update error:', error);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
         }
     }
 

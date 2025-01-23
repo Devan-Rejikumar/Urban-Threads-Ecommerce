@@ -13,14 +13,14 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     try {
       const response = await axios.post('http://localhost:5000/api/admin/adminLogout', {}, {
-        withCredentials: true, 
+        withCredentials: true,
       });
 
-      if(response.status === 200){
+      if (response.status === 200) {
         dispatch(logout());
         navigate('/admin-login', { replace: true });
 
-      }else{
+      } else {
         console.error('Failed to log out');
       }
     } catch (error) {
@@ -33,7 +33,7 @@ const AdminDashboard = () => {
     <Fragment>
       <div className='heading'>
         <h1 className='heading-title'>Admin Dashboard</h1>
-        <button 
+        <button
           onClick={handleLogout}
           className="logout-button"
         >
@@ -53,6 +53,9 @@ const AdminDashboard = () => {
               <li>
                 <Link to="users" className="sidebar-link">User Listing</Link>
               </li>
+              <li>
+                <Link to="orders" className="sidebar-link">Order Management</Link>
+              </li>
             </ul>
           </nav>
         </div>
@@ -62,7 +65,7 @@ const AdminDashboard = () => {
       </div>
     </Fragment>
   );
-  
+
 };
 
 export default AdminDashboard;

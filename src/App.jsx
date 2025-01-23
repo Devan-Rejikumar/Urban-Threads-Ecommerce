@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/user/home.jsx'
 import AuthForm from '../src/components/AuthForm.jsx';
@@ -24,8 +24,46 @@ import Shop from './components/user/Shop.jsx';
 import CartPage from './pages/user/CartPage.jsx';
 import Wishlist from './components/user/WishList.jsx';
 import CheckoutPage from './components/user/CheckoutPage.jsx';
+import OrderHistory from './components/user/OrderHistory.jsx';
+import OrderManagement from './components/admin/OrderManagement.jsx';
+// import axiosInstance from './utils/axiosInstance.js';
+// import { setCart } from './redux/slices/cartSlice.js';
+// import { useDispatch, useSelector } from 'react-redux';
+import OrderDetails from './components/user/OrderDetails.jsx';
 
 function App() {
+
+  // const { user } = useSelector(state => state.userAuth);
+
+  // const dispatch = useDispatch();
+  // if(user) {
+  //   useEffect(() => {
+  //     const fetchCart = async () => {
+  //       try {
+  //         const response = await axiosInstance.get('/cart');
+  //         const cartItems = response.data.items.map(item => ({
+  //           productId: item.productId._id,
+  //           name: item.productId.name,
+  //           price: item.price,
+  //           selectedSize: item.selectedSize,
+  //           quantity: item.quantity,
+  //           image: item.productId.images[0]?.url || item.productId.images[0],
+  //           stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
+  //           maxPerPerson: 5
+  //         }));
+  //         dispatch(setCart(cartItems));
+  //       } catch (error) {
+  //         console.error('Error fetching cart:', error);
+  //         if (error.response?.status === 401) {
+  //           localStorage.removeItem('token');
+  //           window.location.href = '/login';
+  //         }
+  //       }
+  //     };
+  
+  //       fetchCart();
+  //   }, [dispatch]);
+  // }
 
   return (
     <Router>
@@ -61,6 +99,9 @@ function App() {
   <Route path="/cart" element={<CartPage />} />
   <Route path="/wishlist" element={<Wishlist />} />
   <Route path="/checkout" element={<CheckoutPage />} />
+  <Route path="/profile/orders" element={<OrderHistory />} />
+  <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
+
         <Route
           path="/admin-login"
           element={
@@ -80,6 +121,7 @@ function App() {
           <Route path="categories" element={<Category />} />
           <Route path="categories/add" element={<AddCategory />} />
           <Route path="categories/edit/:id" element={<EditCategory />} />
+          <Route path="/admin-dashboard/orders" element={<OrderManagement />} />
         </Route>
 
 
