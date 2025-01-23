@@ -23,9 +23,7 @@ import ChangePassword from './components/user/profile/ChangePassword.jsx';
 import Shop from './components/user/Shop.jsx';
 import CartPage from './pages/user/CartPage.jsx';
 import Wishlist from './components/user/WishList.jsx';
-
-
-
+import CheckoutPage from './components/user/CheckoutPage.jsx';
 
 function App() {
 
@@ -62,24 +60,18 @@ function App() {
   <Route path="/profile/change-password" element={<ChangePassword />} />
   <Route path="/cart" element={<CartPage />} />
   <Route path="/wishlist" element={<Wishlist />} />
-
-
+  <Route path="/checkout" element={<CheckoutPage />} />
         <Route
           path="/admin-login"
           element={
-            // <PublicRoute authType="admin">
             <AdminLogin />
-            // </PublicRoute>
+     
           }
         />
-
-
         <Route
           path="/admin-dashboard"
           element={
-
             <AdminDashboard />
-
           }
         >
           <Route index element={<div>Welcome to Admin Dashboard</div>} />
