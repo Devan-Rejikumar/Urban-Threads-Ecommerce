@@ -7,13 +7,13 @@ import axiosInstance from '../../utils/axiosInstance';
 const Cart = ({ show, onHide }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cartItems = useSelector(state => state.cart.items); // Add this line to get cart items from Redux
+  const cartItems = useSelector(state => state.cart.items); 
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
         const response = await axiosInstance.get('/cart');
-        // Transform the cart data to match Redux store structure
+  
         const cartItems = response.data.items.map(item => ({
           productId: item.productId._id,
           name: item.productId.name,
@@ -28,7 +28,7 @@ const Cart = ({ show, onHide }) => {
       } catch (error) {
         console.error('Error fetching cart:', error);
         if (error.response?.status === 401) {
-          // Handle unauthorized access
+       
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
@@ -53,7 +53,7 @@ const Cart = ({ show, onHide }) => {
         dispatch(updateQuantity({ productId, selectedSize, quantity: newQty }));
       } catch (error) {
         console.error('Failed to update quantity:', error);
-        // You might want to add proper error handling here
+      
       }
     }
   };
@@ -64,7 +64,7 @@ const Cart = ({ show, onHide }) => {
       dispatch(removeFromCart({ productId, selectedSize }));
     } catch (error) {
       console.error('Failed to remove item:', error);
-      // You might want to add proper error handling here
+    
     }
   };
 
@@ -85,13 +85,13 @@ const Cart = ({ show, onHide }) => {
       <div className="modal-dialog modal-dialog-scrollable modal-dialog-end" 
            style={{ margin: '0 0 0 auto', height: '100vh', maxWidth: '400px' }}>
         <div className="modal-content h-100">
-          {/* Header */}
+    
           <div className="modal-header">
             <h5 className="modal-title">Shopping Cart ({cartItems.length})</h5>
             <button type="button" className="btn-close" onClick={onHide}></button>
           </div>
 
-          {/* Body */}
+     
           <div className="modal-body">
             {cartItems.length === 0 ? (
               <div className="text-center py-5">
@@ -170,7 +170,7 @@ const Cart = ({ show, onHide }) => {
             )}
           </div>
 
-          {/* Footer */}
+         
           {cartItems.length > 0 && (
             <div className="modal-footer flex-column">
               <div className="w-100">

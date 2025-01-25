@@ -37,16 +37,12 @@ const OrderDetails = () => {
       try {
         const response = await axiosInstance.post(`/orders/${orderId}/cancel`);
         if (response.data.success) {
-          toast.success('Order cancelled successfully');
-          // Refresh order details
-          const orderResponse = await axiosInstance.get(`/orders/${orderId}`);
-          if (orderResponse.data.success) {
-            setOrder(orderResponse.data.order);
-          }
+          toast.success(response.data.message);
+          setOrder(response.data.order);
         }
       } catch (error) {
-        console.error('Error cancelling order:', error);
-        toast.error(error.response?.data?.message || 'Failed to cancel order');
+        const message = error.response?.data?.message || 'Failed to cancel order';
+        toast.error(message);
       }
     }
   };
@@ -58,25 +54,42 @@ const OrderDetails = () => {
     }
 
     try {
+      console.log('Sending cancel request:', {
+        orderId,
+        itemId: selectedItem.itemId,
+        reason: cancelReason
+      });
+
       const response = await axiosInstance.post(`/orders/${orderId}/cancel-item`, {
         itemId: selectedItem.itemId,
         reason: cancelReason
       });
       
+      console.log('Cancel response:', response.data); // Debug log
+
       if (response.data.success) {
-        toast.success('Item cancelled successfully');
+        toast.success(response.data.message);
+        setOrder(response.data.order);
         setShowCancelDialog(false);
         setCancelReason('');
         setSelectedItem(null);
-        // Refresh order details
-        const orderResponse = await axiosInstance.get(`/orders/${orderId}`);
-        if (orderResponse.data.success) {
-          setOrder(orderResponse.data.order);
-        }
       }
     } catch (error) {
+      console.error('Cancel item error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       toast.error(error.response?.data?.message || 'Failed to cancel item');
     }
+  };
+
+  const openCancelDialog = (item) => {
+    setSelectedItem({
+      itemId: item._id,
+      name: item.productId.name
+    });
+    setShowCancelDialog(true);
   };
 
   if (loading) {
@@ -190,13 +203,7 @@ const OrderDetails = () => {
                   {item.status === 'active' && order.status === 'pending' && (
                     <button 
                       className="btn btn-outline-danger btn-sm mt-2"
-                      onClick={() => {
-                        setSelectedItem({ 
-                          itemId: item._id,
-                          name: item.productId.name
-                        });
-                        setShowCancelDialog(true);
-                      }}
+                      onClick={() => openCancelDialog(item)}
                     >
                       Cancel Item
                     </button>

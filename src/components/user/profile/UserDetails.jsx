@@ -59,7 +59,7 @@ const UserDetails = () => {
     }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -67,22 +67,20 @@ const UserDetails = () => {
                 return;
             }
 
-            const response = await axiosInstance.put('/auth/profile/update', formData);
-            
+            const response = await axiosInstance.put('/auth/profile/update', formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
             if (response.data.user) {
                 setUserDetails(response.data.user);
                 setIsModalOpen(false);
-                toast.success('Profile updated successfully');
-                
-         
-                const userResponse = await axiosInstance.get('/auth/profile');
-                if (userResponse.data) {
-                    setUserDetails(userResponse.data);
-                }
+                toast.success(response.data.message || 'Profile updated successfully');
             }
         } catch (error) {
-            console.error('Update error:', error);
-            toast.error(error.response?.data?.message || 'Failed to update profile');
+            console.error('Failed to update user details:', error.response?.data || error);
+            toast.error(error.response?.data?.message || 'Failed to update user details');
         }
     }
 

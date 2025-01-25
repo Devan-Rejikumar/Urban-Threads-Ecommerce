@@ -8,6 +8,7 @@ import Footer from './Footer';
 import AddressModal from './AddressForm';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
     <div
@@ -72,21 +73,15 @@ const PaymentMethod = ({
 const Checkout = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-
-    // Address State
     const [addresses, setAddresses] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
     const cartItems = useSelector(state => state.cart.items);
     const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-    // Payment State
     const [selectedPayment, setSelectedPayment] = useState(null);
-
-    // Modal States
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
 
-    // Fetch Addresses on Component Mount
+
     useEffect(() => {
         fetchAddresses();
     }, []);
@@ -96,7 +91,7 @@ const Checkout = () => {
             const response = await axiosInstance.get('/auth/addresses');
             if (response.data.success) {
                 setAddresses(response.data.addresses);
-                // Auto-select default address if exists
+
                 const defaultAddress = response.data.addresses.find(addr => addr.isDefault);
                 if (defaultAddress) {
                     setSelectedAddress(defaultAddress._id);
@@ -119,22 +114,16 @@ const Checkout = () => {
     const handleAddressModalClose = () => {
         setShowAddressModal(false);
         setEditingAddress(null);
-        fetchAddresses(); // Refresh addresses after modal close
+        fetchAddresses();
     };
 
     const handlePlaceOrder = async () => {
-        // Validate selection
-        if (!selectedAddress) {
-            toast.error('Please select a shipping address');
-            return;
-        }
-
-        if (!selectedPayment) {
-            toast.error('Please select a payment method');
-            return;
-        }
-
         try {
+            if (!selectedAddress || !selectedPayment) {
+                toast.error('Please select both address and payment method');
+                return;
+            }
+
             const orderPayload = {
                 addressId: selectedAddress,
                 paymentMethod: selectedPayment,
@@ -142,30 +131,50 @@ const Checkout = () => {
                     productId: item.productId,
                     selectedSize: item.selectedSize,
                     quantity: item.quantity,
-                    price: item.price
+                    price: item.price,
+                    status: 'pending'
                 })),
                 totalAmount: cartTotal
             };
 
+            console.log('Sending order payload:', orderPayload);
+
+
             const response = await axiosInstance.post('/orders', orderPayload);
 
+            // if (response.data.success) {
+            //     dispatch({ type: 'cart/clearCart' });
+            //     toast.success('Order placed successfully!');
+
+
+            //     navigate('/order-confirmation', {
+            //         state: { orderId: response.data.orderId }
+            //     });
+            // }
+
+
             if (response.data.success) {
-                // Clear cart after successful order
                 dispatch({ type: 'cart/clearCart' });
-
-                // Show success toast
-                toast.success('Order placed successfully!');
-
-                // Navigate to order confirmation
-                navigate('/order-confirmation', {
-                    state: {
-                        orderId: response.data.orderId
+                Swal.fire({
+                    title: 'Order Placed Successfully!',
+                    text: `Your order #${response.data.orderId} has been placed`,
+                    icon: 'success',
+                    confirmButtonText: 'View Order',
+                    showCancelButton: true,
+                    cancelButtonText: 'Continue Shopping'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        navigate('/profile/orders', {
+                            state: { orderId: response.data.orderId }
+                        });
+                    } else {
+                        navigate('/shop');
                     }
                 });
             }
         } catch (error) {
-            console.error('Order placement failed:', error);
-            toast.error('Failed to place order. Please try again.');
+            console.error('Order placement failed:', error.response?.data || error);
+            toast.error(error.response?.data?.message || 'Failed to place order');
         }
     };
 
@@ -174,9 +183,9 @@ const Checkout = () => {
             <Header />
             <div className="container py-4">
                 <div className="row">
-                    {/* Left Column: Shipping & Payment */}
+
                     <div className="col-md-7">
-                        {/* Shipping Address Section */}
+
                         <div className="card mb-4">
                             <div className="card-header d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0">Shipping Addresses</h5>
@@ -203,7 +212,7 @@ const Checkout = () => {
                             </div>
                         </div>
 
-                        {/* Payment Methods Section */}
+
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Payment Method</h5>
@@ -221,7 +230,7 @@ const Checkout = () => {
                         </div>
                     </div>
 
-                    {/* Right Column: Order Summary */}
+
                     <div className="col-md-5">
                         <div className="card">
                             <div className="card-header">

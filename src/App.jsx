@@ -109,11 +109,7 @@ function App() {
      
           }
         />
-        <Route
-          path="/admin-dashboard"
-          element={
-            <AdminDashboard />
-          }
+        <Route path="/admin-dashboard" element={<AdminProtectionLayer><AdminDashboard /></AdminProtectionLayer>}
         >
           <Route index element={<div>Welcome to Admin Dashboard</div>} />
           <Route path="users" element={<AdminProtectionLayer><UserListing /></AdminProtectionLayer>} />

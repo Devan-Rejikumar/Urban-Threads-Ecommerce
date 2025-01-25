@@ -12,7 +12,7 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        // User authentication actions
+   
         userLoginStart: (state) => {
             state.loading = true;
             state.error = null;
@@ -31,7 +31,7 @@ const authSlice = createSlice({
             return initialState;
         },
 
-        // Admin authentication actions
+     
         adminLoginStart: (state) => {
             state.loading = true;
             state.error = null;
