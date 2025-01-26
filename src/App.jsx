@@ -13,9 +13,10 @@ import EditCategory from "./pages/admin/Category-Management/Edit-Category.jsx";
 import CategoryProducts from './pages/user/CategoryProducts.jsx';
 import ProductDetail from './pages/user/ProductDetails.jsx';
 import UserProtectionLayer from './components/UserProtectionLayer.jsx';
-import AdminProtectionLayer from './components/admin/adminProtectionLayer.jsx';
+import AdminProtectionLayer from './components/admin/AdminProtectionLayer.jsx';
 import UserDetails from './components/user/profile/UserDetails.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import AddressManagement from './components/user/profile/Address.jsx';
 import ForgotPasswordForm from './components/user/ForgotPassword.jsx';
 import ResetPasswordForm from './components/user/ResetPassword.jsx';
@@ -26,10 +27,8 @@ import Wishlist from './components/user/WishList.jsx';
 import CheckoutPage from './components/user/CheckoutPage.jsx';
 import OrderHistory from './components/user/OrderHistory.jsx';
 import OrderManagement from './components/admin/OrderManagement.jsx';
-// import axiosInstance from './utils/axiosInstance.js';
-// import { setCart } from './redux/slices/cartSlice.js';
-// import { useDispatch, useSelector } from 'react-redux';
 import OrderDetails from './components/user/OrderDetails.jsx';
+import AdminCoupon from './components/admin/AdminCoupon.jsx';
 
 function App() {
 
@@ -117,7 +116,8 @@ function App() {
           <Route path="categories" element={<Category />} />
           <Route path="categories/add" element={<AddCategory />} />
           <Route path="categories/edit/:id" element={<EditCategory />} />
-          <Route path="/admin-dashboard/orders" element={<OrderManagement />} />
+          <Route path="orders" element={<OrderManagement />} />
+          <Route path="coupons" element={<AdminCoupon />} />
         </Route>
 
 

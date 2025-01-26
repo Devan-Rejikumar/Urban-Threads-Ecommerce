@@ -66,6 +66,11 @@ const AdminDashboard = () => {
                       Order Management
                     </Link>
                   </li>
+                  <li>
+                    <Link to="coupons" className="nav-link">
+                      Coupon Management
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </nav>

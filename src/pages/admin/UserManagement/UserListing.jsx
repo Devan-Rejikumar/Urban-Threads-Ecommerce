@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import './UserListing.css';
 import AdminBreadcrumbs from '../UserManagement/AdminBreadcrumbs';
 import axios from 'axios';
@@ -8,6 +9,8 @@ const UserListing = () => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +56,18 @@ const UserListing = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = users.filter(user => 
+        user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    } else {
+      setFilteredUsers(users);
+    }
+  }, [searchTerm, users]);
+
   const handleBlockUnblock = async (id, action) => {
     const confirmAction = window.confirm(`Are you sure you want to ${action} this user?`);
     if (!confirmAction) return;
@@ -89,6 +104,22 @@ const UserListing = () => {
         <AdminBreadcrumbs />
       </header>
 
+      {/* Add search bar */}
+      <div className="mb-4">
+        <div className="input-group">
+          <span className="input-group-text">
+            <Search size={20} />
+          </span>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search users by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
       {error && (
         <div className="error-container">
           <p>{error}</p>
@@ -96,7 +127,7 @@ const UserListing = () => {
         </div>
       )}
 
-      {users.length > 0 ? (
+      {filteredUsers.length > 0 ? (
         <table>
           <caption>User Listing</caption>
           <thead>
@@ -108,7 +139,7 @@ const UserListing = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <tr key={user._id}>
                 <td>{user.firstName}</td>
                 <td>{user.email}</td>

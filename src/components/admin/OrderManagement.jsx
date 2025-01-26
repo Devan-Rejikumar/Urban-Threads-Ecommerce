@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Button, Modal, Badge, Dropdown, Form } from 'react-bootstrap';
+import { Container, Table, Button, Modal, Badge, Form, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
+import { Dropdown } from 'react-bootstrap';
+import { Search } from 'lucide-react';
 
 const OrderManagement = () => {
     const [orders, setOrders] = useState([]);
@@ -8,6 +10,8 @@ const OrderManagement = () => {
     const [filter, setFilter] = useState('All');
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredOrders, setFilteredOrders] = useState([]);
 
     useEffect(() => {
         fetchOrders();
@@ -21,7 +25,7 @@ const OrderManagement = () => {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.data.success) {
                 setOrders(response.data.orders);
             }
@@ -46,10 +50,10 @@ const OrderManagement = () => {
             );
 
             if (response.data.success) {
-                setOrders(orders.map(order => 
-                    order._id === orderId 
-                    ? { ...order, status: newStatus } 
-                    : order
+                setOrders(orders.map(order =>
+                    order._id === orderId
+                        ? { ...order, status: newStatus }
+                        : order
                 ));
             }
         } catch (error) {
@@ -62,35 +66,44 @@ const OrderManagement = () => {
         setShowModal(true);
     };
 
-    const renderStatusOptions = (currentStatus) => {
+    const getStatusOptions = (currentStatus) => {
+        console.log('Current Status:', currentStatus);
+        const capitalizedStatus = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1).toLowerCase();
         const statusFlow = {
-            'Pending': ['Processing', 'Cancelled'],
+            'Pending': ['Processing', 'Shipped', 'Cancelled'],
             'Processing': ['Shipped', 'Cancelled'],
             'Shipped': ['Delivered', 'Cancelled'],
             'Delivered': [],
             'Cancelled': []
         };
-
-        return statusFlow[currentStatus]?.map(status => (
-            <Dropdown.Item 
-                key={status} 
-                onClick={() => handleUpdateOrderStatus(currentStatus._id, status)}
-            >
-                {status}
-            </Dropdown.Item>
-        ));
+        return statusFlow[capitalizedStatus] || [];
     };
 
     const getStatusBadgeVariant = (status) => {
         const statusVariants = {
-            'Pending': 'warning',
-            'Processing': 'info',
-            'Shipped': 'primary',
-            'Delivered': 'success',
-            'Cancelled': 'danger'
+            'pending': 'warning',
+            'processing': 'info',
+            'shipped': 'primary',
+            'delivered': 'success',
+            'cancelled': 'danger'
         };
         return statusVariants[status] || 'secondary';
     };
+
+    useEffect(() => {
+        if (searchTerm) {
+            const filtered = orders.filter(order => 
+                order.userId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.orderId?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setFilteredOrders(filtered);
+        } else {
+            setFilteredOrders(orders);
+        }
+    }, [searchTerm, orders]);
+
+    const displayOrders = searchTerm ? filteredOrders : orders;
 
     if (loading) {
         return <div>Loading orders...</div>;
@@ -99,69 +112,99 @@ const OrderManagement = () => {
     return (
         <Container fluid>
             <h2 className="my-4">Order Management</h2>
-            
-            <Form.Select 
-                className="mb-3 w-25" 
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-            >
-                <option value="All">All Orders</option>
-                <option value="Pending">Pending</option>
-                <option value="Processing">Processing</option>
-                <option value="Shipped">Shipped</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-            </Form.Select>
 
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Total Amount</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {orders.map(order => (
-                        <tr key={order._id}>
-                            <td>{order._id}</td>
-                            <td>₹{order.totalAmount}</td>
-                            <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                            <td>
-                                <Badge bg={getStatusBadgeVariant(order.status)}>
-                                    {order.status}
-                                </Badge>
-                            </td>
-                            <td>
-                                <Dropdown>
-                                    <Dropdown.Toggle variant="secondary">
-                                        Change Status
-                                    </Dropdown.Toggle>
-                                    <Dropdown.Menu>
-                                        {renderStatusOptions(order.status)}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </td>
-                            <td>
-                                <Button 
-                                    variant="info" 
-                                    size="sm"
-                                    onClick={() => handleViewDetails(order)}
-                                >
-                                    View Details
-                                </Button>
-                            </td>
+            <div className="d-flex gap-3 mb-3">
+                <InputGroup className="w-50">
+                    <InputGroup.Text>
+                        <Search size={20} />
+                    </InputGroup.Text>
+                    <Form.Control
+                        placeholder="Search by customer name, email or order ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </InputGroup>
+
+                <Form.Select
+                    className="w-25"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                >
+                    <option value="All">All Orders</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+            </div>
+
+            {displayOrders.length === 0 ? (
+                <div className="text-center py-5">
+                    <h4>No orders found</h4>
+                    <p className="text-muted">Try adjusting your search or filter criteria</p>
+                </div>
+            ) : (
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Total Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                            <th>Details</th>
                         </tr>
-                    ))}
-                </tbody>
-            </Table>
+                    </thead>
+                    <tbody>
+                        {displayOrders.map(order => (
+                            <tr key={order._id}>
+                                <td>#{order.orderId}</td>
+                                <td>₹{order.totalAmount}</td>
+                                <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                                <td>
+                                    <Badge bg={getStatusBadgeVariant(order.status)}>
+                                        {order.status}
+                                    </Badge>
+                                </td>
+
+                                <td>
+                                {console.log('Order Status:', order.status)}
+                                    <Dropdown>
+                                        <Dropdown.Toggle variant="secondary" disabled={order.status == 'cancelled' || order.status == 'delivered'}>
+                                            Change Status
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu>
+                                            {getStatusOptions(order.status).map(status => (
+                                                <Dropdown.Item
+                                                    key={status}
+                                                    onClick={() => handleUpdateOrderStatus(order._id, status)}
+                                                >
+                                                    {status}
+                                                </Dropdown.Item>
+                                            ))}
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </td>
+
+                                <td>
+                                    <Button
+                                        variant="info"
+                                        size="sm"
+                                        onClick={() => handleViewDetails(order)}
+                                    >
+                                        View Details
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            )}
 
             {/* Order Details Modal */}
-            <Modal 
-                show={showModal} 
+            <Modal
+                show={showModal}
                 onHide={() => setShowModal(false)}
                 size="lg"
             >
@@ -208,8 +251,8 @@ const OrderManagement = () => {
                                         <tr key={item._id}>
                                             <td>
                                                 <div className="d-flex align-items-center">
-                                                    <img 
-                                                        src={item.productId.images[0]} 
+                                                    <img
+                                                        src={item.productId.images[0]}
                                                         alt={item.productId.name}
                                                         style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                                                         className="me-2"

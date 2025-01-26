@@ -113,27 +113,25 @@ const UserDetails = () => {
                             <Edit2 size={18} className="text-primary" />
                         </button>
                     </div>
-                    {userDetails && (
-                        <div className="row g-3">
-                            <div className="col-12 mb-3">
-                                <div className="d-flex align-items-center">
-                                    <div className="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                                        <User size={24} className="text-primary" />
-                                    </div>
-                                    <div>
-                                        <h3 className="fs-5 mb-1">{userDetails.firstName} {userDetails.lastName}</h3>
-                                        <p className="text-muted mb-0">{userDetails.email}</p>
-                                    </div>
+                    <div className="row g-3">
+                        <div className="col-12 mb-3">
+                            <div className="d-flex align-items-center">
+                                <div className="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                    <User size={24} className="text-primary" />
                                 </div>
-                            </div>
-                            <div className="col-12">
-                                <div className="p-3 rounded bg-opacity-10" style={{ backgroundColor: 'rgba(108, 93, 211, 0.1)' }}>
-                                    <p className="mb-2"><strong>Email : </strong> {userDetails.email}</p>
-                                    <p className="mb-0"><strong>Phone : </strong> {userDetails.phone}</p>
+                                <div>
+                                    <h3 className="fs-5 mb-1">{userDetails.firstName} {userDetails.lastName}</h3>
+                                    <p className="text-muted mb-0">{userDetails.email}</p>
                                 </div>
                             </div>
                         </div>
-                    )}
+                        <div className="col-12">
+                            <div className="p-3 rounded bg-opacity-10" style={{ backgroundColor: 'rgba(108, 93, 211, 0.1)' }}>
+                                <p className="mb-2"><strong>Email : </strong> {userDetails.email}</p>
+                                <p className="mb-0"><strong>Phone : </strong> {userDetails.phone}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {isModalOpen && (

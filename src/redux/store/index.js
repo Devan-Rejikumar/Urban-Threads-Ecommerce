@@ -5,6 +5,7 @@ import userAuthReducer from '../slices/userAuthSlice';
 import adminAuthReducer from '../slices/adminAuthSlice';
 import cartSlice from '../slices/cartSlice';
 import wishlistReducer from '../slices/whishlistSlice';
+import couponReducer from '../slices/couponSlice';
 
 const userPersistConfig = {
     key: 'userAuth',
@@ -27,6 +28,7 @@ export const store = configureStore({
         adminAuth: persistedAdminReducer,
         cart : cartSlice,
         wishlist : wishlistReducer,
+        coupon: couponReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
