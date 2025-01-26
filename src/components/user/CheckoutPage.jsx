@@ -80,11 +80,30 @@ const Checkout = () => {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
+    const [coupons, setCoupons] = useState([]);
+    const [selectedCoupon, setSelectedCoupon] = useState(null);
+    const [couponCode, setCouponCode] = useState('');
+    const [discountAmount, setDiscountAmount] = useState(0);
+    const [showCouponDropdown, setShowCouponDropDown] = useState(false);
 
 
     useEffect(() => {
         fetchAddresses();
     }, []);
+
+    useEffect(() => {
+        fetchCoupons();
+    }, [])
+
+    const fetchCoupons = async () => {
+        try {
+            const response = await axiosInstance.get('/admin/coupons');
+            setCoupons(response.data.coupons);
+        } catch (error) {
+            console.error('Failed to fetch coupons', error)
+        }
+    }
+
 
     const fetchAddresses = async () => {
         try {
@@ -142,17 +161,6 @@ const Checkout = () => {
 
             const response = await axiosInstance.post('/orders', orderPayload);
 
-            // if (response.data.success) {
-            //     dispatch({ type: 'cart/clearCart' });
-            //     toast.success('Order placed successfully!');
-
-
-            //     navigate('/order-confirmation', {
-            //         state: { orderId: response.data.orderId }
-            //     });
-            // }
-
-
             if (response.data.success) {
                 dispatch({ type: 'cart/clearCart' });
                 Swal.fire({
@@ -178,14 +186,54 @@ const Checkout = () => {
         }
     };
 
+
+    const handleApplyCoupon = async () => {
+        try {
+            console.log('Applying coupon:', { code: couponCode, cartTotal }); // Debug log
+            
+            const response = await axiosInstance.post('/apply-coupon', {
+                code: couponCode,
+                cartTotal: cartTotal
+            });
+            
+            console.log('Coupon response:', response.data); // Debug log
+            
+            if (response.data.success) {
+                setDiscountAmount(response.data.discountAmount);
+                setSelectedCoupon(response.data.coupon);
+                toast.success('Coupon applied successfully');
+            }
+        } catch (error) {
+            console.error('Coupon error details:', {
+                message: error.message,
+                response: error.response?.data
+            });
+            toast.error(error.response?.data?.message || 'Failed to apply coupon');
+        }
+    };
+
+    const handleCouponSelect = (coupon) => {
+        setCouponCode(coupon.code);
+        setShowCouponDropDown(false);
+    }
+
+    const handleRemoveCoupon = async () => {
+        try {
+            await axiosInstance.delete('/remove-coupon');
+            setSelectedCoupon(null);
+            setDiscountAmount(0);
+            setCouponCode('');
+            toast.success('Coupon removed successfully');
+        } catch (error) {
+            toast.error('Failed to remove coupon');
+        }
+    };
     return (
         <>
             <Header />
             <div className="container py-4">
                 <div className="row">
-
                     <div className="col-md-7">
-
                         <div className="card mb-4">
                             <div className="card-header d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0">Shipping Addresses</h5>
@@ -212,7 +260,6 @@ const Checkout = () => {
                             </div>
                         </div>
 
-
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Payment Method</h5>
@@ -229,7 +276,6 @@ const Checkout = () => {
                             </div>
                         </div>
                     </div>
-
 
                     <div className="col-md-5">
                         <div className="card">
@@ -256,9 +302,78 @@ const Checkout = () => {
                                 ))}
 
                                 <hr />
-                                <div className="d-flex justify-content-between">
-                                    <span>Total</span>
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span>Subtotal</span>
                                     <strong>₹{cartTotal}</strong>
+                                </div>
+                                {selectedCoupon && (
+                                    <div className="d-flex justify-content-between mb-2 text-success">
+                                        <span>
+                                            Discount
+                                            {selectedCoupon.discountType === 'percentage'
+                                                ? ` (${selectedCoupon.discountAmount}%)`
+                                                : ''}
+                                        </span>
+                                        <strong>-₹{discountAmount}</strong>
+                                    </div>
+                                )}
+                                <hr />
+                                <div className="d-flex justify-content-between fw-bold">
+                                    <span>Total</span>
+                                    <strong>₹{Math.max(0, cartTotal - discountAmount)}</strong>
+                                </div>
+
+                                <div className="card mb-4 mt-3">
+                                    <div className="card-header">
+                                        <h5 className="mb-0">Apply Coupon</h5>
+                                    </div>
+                                    <div className="card-body">
+                                        <div className="d-flex gap-2 mb-3">
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="Enter coupon code"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value)}
+                                            />
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={handleApplyCoupon}
+                                                disabled={!couponCode}
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+
+                                        <div className="dropdown">
+                                            <button
+                                                className="btn btn-secondary dropdown-toggle w-100"
+                                                onClick={() => setShowCouponDropDown(!showCouponDropdown)}
+                                            >
+                                                Available Coupons
+                                            </button>
+
+                                            {showCouponDropdown && (
+                                                <div className="dropdown-menu show w-100">
+                                                    {coupons.map(coupon => (
+                                                        <button
+                                                            key={coupon._id}
+                                                            className="dropdown-item"
+                                                            onClick={() => handleCouponSelect(coupon)}
+                                                        >
+                                                            <strong>{coupon.code}</strong>
+                                                            <br />
+                                                            <small>
+                                                                {coupon.discountType === 'percentage'
+                                                                    ? `${coupon.discountAmount}% off`
+                                                                    : `₹${coupon.discountAmount} off`}
+                                                            </small>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button
