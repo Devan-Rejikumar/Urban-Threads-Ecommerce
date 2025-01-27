@@ -6,7 +6,7 @@ import axiosInstance from '../../utils/axiosInstance';
 import Header from './Header';
 import Footer from './Footer';
 import AddressModal from './AddressForm';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
 
@@ -155,6 +155,8 @@ const Checkout = () => {
                 return;
             }
 
+            const finalAmount = cartTotal - discountAmount; // Calculate final amount with discount
+
             const orderPayload = {
                 addressId: selectedAddress,
                 paymentMethod: selectedPayment,
@@ -165,7 +167,7 @@ const Checkout = () => {
                     price: item.price,
                     status: 'pending'
                 })),
-                totalAmount: cartTotal
+                totalAmount: finalAmount 
             };
 
             console.log('Sending order payload:', orderPayload);
@@ -199,23 +201,48 @@ const Checkout = () => {
     };
 
 
+    // const handleApplyCoupon = async () => {
+    //     try {
+    //         const response = await axiosInstance.post('/apply-coupon', {
+    //             code: couponCode
+    //         });
+    //         if (response.data.success) {
+    //             setDiscountAmount(response.data.cart.discount);
+    //             setSelectedCoupon(response.data.cart.couponCode);
+    //             toast.success('Coupon applied successfully');
+    //         }
+    //     } catch (error) {
+    //         toast.error(error.response?.data?.message || 'Failed to apply coupon');
+    //     }
+    // }
     const handleApplyCoupon = async () => {
         try {
+            // Find the selected coupon's details
+            const selectedCouponDetails = coupons.find(coupon => coupon.code === couponCode);
+            
+            if (selectedCouponDetails && cartTotal < selectedCouponDetails.minimumPurchase) {
+                toast.info(`Minimum purchase of ₹${selectedCouponDetails.minimumPurchase} required for coupon ${couponCode}. Add items worth ₹${selectedCouponDetails.minimumPurchase - cartTotal} more to use this coupon!`);
+                return;
+            }
+
             const response = await axiosInstance.post('/apply-coupon', {
-                code: couponCode,
-                cartTotal: cartTotal
+                code: couponCode
             });
             if (response.data.success) {
-                setDiscountAmount(response.data.discountAmount)
-                setSelectedCoupon(response.data.coupon);
-                toast.success('Coupon applied successfully')
+                setDiscountAmount(response.data.cart.discount);
+                setSelectedCoupon(response.data.cart.couponCode);
+                toast.success('Coupon applied successfully');
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to appluy coupon')
+            toast.error(error.response?.data?.message || 'Failed to apply coupon');
         }
-    }
+    };
 
     const handleCouponSelect = (coupon) => {
+        if (cartTotal < coupon.minimumPurchase) {
+            toast.info(`Add items worth ₹${coupon.minimumPurchase - cartTotal} more to use coupon ${coupon.code}`);
+            return;
+        }
         setCouponCode(coupon.code);
         setShowCouponDropDown(false);
     }
@@ -234,6 +261,18 @@ const Checkout = () => {
     return (
         <>
             <Header />
+            {/* Add ToastContainer at the top level */}
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
             <div className="container py-4">
                 <div className="row">
 
@@ -309,9 +348,28 @@ const Checkout = () => {
                                 ))}
 
                                 <hr />
-                                <div className="d-flex justify-content-between">
-                                    <span>Total</span>
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span>Subtotal</span>
                                     <strong>₹{cartTotal}</strong>
+                                </div>
+                                {discountAmount > 0 && (
+                                    <div className="d-flex justify-content-between align-items-center mb-2 text-success">
+                                        <span>Discount ({couponCode})</span>
+                                        <div>
+                                            <strong className="me-2">-₹{discountAmount}</strong>
+                                            <button 
+                                                className="btn btn-sm btn-outline-danger"
+                                                onClick={handleRemoveCoupon}
+                                                title="Remove Coupon"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="d-flex justify-content-between border-top pt-2">
+                                    <span className="fw-bold">Final Total</span>
+                                    <strong>₹{cartTotal - discountAmount}</strong>
                                 </div>
                                 <div className="card mb-4">
                                     <div className="card-header">

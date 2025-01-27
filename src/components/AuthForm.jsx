@@ -154,21 +154,21 @@ const AuthForm = () => {
     const [registrationId, setRegistrationId] = useState(null);
     const [verificationEmail, setVerificationEmail] = useState('');
 
-    useEffect(() => {
-        const checkAuthStatus = async () => {
-            try {
-                const response = await axios.get('http://localhost:5000/api/auth/verify-status');
-                if (response.data.isAuthenticated) {
-                    dispatch(loginSuccess(response.data.user));
-                    navigate('/');
-                }
-            } catch (error) {
-                console.log('User not authenticated');
-            }
-        };
+    // useEffect(() => {
+    //     const checkAuthStatus = async () => {
+    //         try {
+    //             const response = await axios.get('http://localhost:5000/api/auth/verify-status');
+    //             if (response.data.isAuthenticated) {
+    //                 dispatch(loginSuccess(response.data.user));
+    //                 navigate('/');
+    //             }
+    //         } catch (error) {
+    //             console.log('User not authenticated');
+    //         }
+    //     };
 
-        checkAuthStatus();
-    }, [dispatch, navigate]);
+    //     checkAuthStatus();
+    // }, [dispatch, navigate]);
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
         try {
@@ -194,6 +194,7 @@ const AuthForm = () => {
                     localStorage.setItem('token', response.data.token);
                     dispatch(loginSuccess(response.data.user));
                     toast.success('Login successful!');
+                    console.log("login user data verified nnnnnnnnnnnnnnnnnnnnnn")
                     navigate('/');
                 }
             }

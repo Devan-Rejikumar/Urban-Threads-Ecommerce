@@ -68,7 +68,7 @@ function App() {
     <Router>
       <Routes>
 
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<UserProtectionLayer><Home /></UserProtectionLayer>} />
         <Route path="/category/:categoryId" element={<CategoryProducts />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path='/profile/details' element={<UserDetails />} />

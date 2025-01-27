@@ -9,11 +9,12 @@ const UserProtectionLayer = ({ children }) => {
 
     useEffect(() => {
         const verifyToken = async () => {
+            console.log('gdusgyuhgsay')
             try {
-                const response = await axiosInstances.get('/api/auth/verify-token');
+                const response = await axiosInstances.get('/auth/verify-token');
                 if (response.status === 200) {
                     console.log('Token verification successful');
-                    setIsVerified(true);
+                    // setIsVerified(true);
                 } else {
                     console.log('Token verification failed');
                     navigate('/login');
@@ -33,9 +34,9 @@ const UserProtectionLayer = ({ children }) => {
         return <div>Loading...</div>; 
     }
 
-    if (!isVerified) {
-        return <Navigate to="/login" replace />;
-    }
+    // if (!isVerified) {
+    //     return <Navigate to="/login" replace />;
+    // }
 
     return children;
 };

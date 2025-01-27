@@ -6,6 +6,7 @@ import adminAuthReducer from '../slices/adminAuthSlice';
 import cartSlice from '../slices/cartSlice';
 import wishlistReducer from '../slices/whishlistSlice';
 import couponReducer from '../slices/couponSlice';
+import checkoutReducer from '../slices/checkoutSlice';  // Add this import
 
 const userPersistConfig = {
     key: 'userAuth',
@@ -19,16 +20,31 @@ const adminPersistConfig = {
     whitelist: ['isAuthenticated', 'user', 'token']
 };
 
+const cartPersistConfig = {
+    key: 'cart',
+    storage,
+    whitelist: ['items', 'totalAmount', 'discount']
+};
+
+const checkoutPersistConfig = {
+    key: 'checkout',
+    storage,
+    whitelist: ['selectedAddress', 'selectedPayment', 'couponCode', 'discountAmount']
+};
+
 const persistedUserReducer = persistReducer(userPersistConfig, userAuthReducer);
 const persistedAdminReducer = persistReducer(adminPersistConfig, adminAuthReducer);
+const persistedCartReducer = persistReducer(cartPersistConfig, cartSlice);
+const persistedCheckoutReducer = persistReducer(checkoutPersistConfig, checkoutReducer);  // Fix this line
 
 export const store = configureStore({
     reducer: {
         userAuth: persistedUserReducer,
         adminAuth: persistedAdminReducer,
-        cart : cartSlice,
-        wishlist : wishlistReducer,
+        cart: persistedCartReducer,
+        wishlist: wishlistReducer,
         coupon: couponReducer,
+        checkout: persistedCheckoutReducer,  // And use the persisted version here
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
