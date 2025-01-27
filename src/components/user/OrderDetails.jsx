@@ -12,6 +12,7 @@ const OrderDetails = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [error, setError] = useState(null);
   const { orderId } = useParams();
   const navigate = useNavigate();
 
@@ -23,7 +24,8 @@ const OrderDetails = () => {
           setOrder(response.data.order);
         }
       } catch (error) {
-        console.error('Error fetching order details:', error);
+        setError(error.response?.data?.message || 'Error fetching order details');
+        console.error('Error fetching order details:', error); 
       } finally {
         setLoading(false);
       }
@@ -31,6 +33,8 @@ const OrderDetails = () => {
 
     fetchOrderDetails();
   }, [orderId]);
+
+  
 
   const handleCancelOrder = async () => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
@@ -102,6 +106,21 @@ const OrderDetails = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-5">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <button 
+          className="btn btn-primary mt-3"
+          onClick={() => navigate('/profile/orders')}
+        >
+          Back to Orders
+        </button>
+      </div>
+    );
+  }
+
   if (!order) {
     return (
       <div className="text-center py-5">
@@ -115,6 +134,48 @@ const OrderDetails = () => {
       </div>
     );
   }
+
+  const renderOrderItem = (item) => {
+    if (!item.productId) return null;
+
+    return (
+      <div key={item._id} className="row mb-3 align-items-center">
+        <div className="col-md-2">
+          {item.productId.images && item.productId.images.length > 0 && (
+            <img
+              src={item.productId.images[0]}
+              alt={item.productId.name}
+              className="img-fluid rounded"
+              style={{ maxHeight: '100px', objectFit: 'cover' }}
+            />
+          )}
+        </div>
+        <div className="col-md-6">
+          <h6>{item.productId.name}</h6>
+          <p className="text-muted mb-0">
+            Size: {item.selectedSize} | Quantity: {item.quantity}
+          </p>
+          {item.status === 'cancelled' && (
+            <p className="text-danger mb-0">
+              Cancelled - Reason: {item.cancellationReason}
+            </p>
+          )}
+        </div>
+        <div className="col-md-4 text-end">
+          <p className="fw-bold mb-0">₹{(item.price * item.quantity).toFixed(2)}</p>
+          <p className="text-muted small mb-0">₹{item.price} each</p>
+          {item.status === 'active' && order.status === 'pending' && (
+            <button 
+              className="btn btn-outline-danger btn-sm mt-2"
+              onClick={() => openCancelDialog(item)}
+            >
+              Cancel Item
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -171,51 +232,17 @@ const OrderDetails = () => {
           </div>
         )}
 
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">Order Items</h5>
+<div className="card">
+        <div className="card-header">
+          <h5 className="mb-0">Order Items</h5>
+        </div>
+        <div className="card-body">
+          {order.items.map(renderOrderItem)}
+          <hr />
+          <div className="text-end">
+            <h5>Total: ₹{order.totalAmount.toFixed(2)}</h5>
           </div>
-          <div className="card-body">
-            {order.items.map((item) => (
-              <div key={item._id} className="row mb-3 align-items-center">
-                <div className="col-md-2">
-                  <img
-                    src={item.productId.images[0]}
-                    alt={item.productId.name}
-                    className="img-fluid rounded"
-                    style={{ maxHeight: '100px', objectFit: 'cover' }}
-                  />
-                </div>
-                <div className="col-md-6">
-                  <h6>{item.productId.name}</h6>
-                  <p className="text-muted mb-0">
-                    Size: {item.selectedSize} | Quantity: {item.quantity}
-                  </p>
-                  {item.status === 'cancelled' && (
-                    <p className="text-danger mb-0">
-                      Cancelled - Reason: {item.cancellationReason}
-                    </p>
-                  )}
-                </div>
-                <div className="col-md-4 text-end">
-                  <p className="fw-bold mb-0">₹{(item.price * item.quantity).toFixed(2)}</p>
-                  <p className="text-muted small mb-0">₹{item.price} each</p>
-                  {item.status === 'active' && order.status === 'pending' && (
-                    <button 
-                      className="btn btn-outline-danger btn-sm mt-2"
-                      onClick={() => openCancelDialog(item)}
-                    >
-                      Cancel Item
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-            <hr />
-            <div className="text-end">
-              <h5>Total: ₹{order.totalAmount.toFixed(2)}</h5>
-            </div>
-          </div>
+        </div>
         </div>
       </div>
       <Footer />

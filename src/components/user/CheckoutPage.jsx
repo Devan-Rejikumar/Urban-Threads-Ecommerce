@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Edit, MapPin, CreditCard, DollarSign } from 'lucide-react';
+import { Edit, MapPin, CreditCard, DollarSign, Wallet } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import Header from './Header';
 import Footer from './Footer';
@@ -9,6 +9,8 @@ import AddressModal from './AddressForm';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
+import { loadScript } from '../../utils/razorpay';
+
 
 const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
     <div
@@ -85,7 +87,8 @@ const Checkout = () => {
     const [couponCode, setCouponCode] = useState('');
     const [discountAmount, setDiscountAmount] = useState(0);
     const [showCouponDropdown, setShowCouponDropDown] = useState(false);
-
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [useWallet, setUseWallet] = useState(false);
 
     useEffect(() => {
         fetchAddresses();
@@ -95,19 +98,23 @@ const Checkout = () => {
         fetchCoupons();
     }, [])
 
+    useEffect(() => {
+        fetchWalletBalance();
+    }, []);
+
     const fetchCoupons = async () => {
         try {
             const token = localStorage.getItem('token');
-            console.log('dfghjkl;lkjhgfdToken',token);
+            console.log('dfghjkl;lkjhgfdToken', token);
 
             if (!token) {
                 throw new Error('No authentication token found');
             }
 
-            
+
             const response = await axiosInstance.get('/coupons', {
-                headers : {
-                    'Authorization' : `Bearer ${token}`
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
             });
             setCoupons(response.data.coupons);
@@ -148,78 +155,129 @@ const Checkout = () => {
         fetchAddresses();
     };
 
+    const initializeRazorpayPayment = async () => {
+        try {
+          const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+          
+          if (!res) {
+            toast.error('Razorpay SDK failed to load');
+            return;
+          }
+      
+          const response = await axiosInstance.post('/payment/create-order', {
+            totalAmount: cartTotal - discountAmount
+          });
+      
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: response.data.order.amount,
+            currency: "INR",
+            name: "Urban Threads",
+            description: "Payment for order",
+            order_id: response.data.order.id,
+            handler: async function (response) {
+              try {
+                const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature
+                });
+      
+                if (verifyResponse.data.success) {
+                  const orderPayload = {
+                    addressId: selectedAddress,
+                    paymentMethod: 'online',
+                    items: cartItems.map(item => ({
+                      productId: item.productId,
+                      selectedSize: item.selectedSize,
+                      quantity: item.quantity,
+                      price: item.price
+                    })),
+                    totalAmount: cartTotal - discountAmount,
+                    razorpayOrderId: response.razorpay_order_id,
+                    razorpayPaymentId: response.razorpay_payment_id
+                  };
+      
+                  await handleOrderCompletion(orderPayload);
+                }
+              } catch (error) {
+                toast.error('Payment verification failed');
+              }
+            },
+            prefill: {
+              name: "Customer Name",
+              email: "customer@example.com"
+            },
+            theme: {
+              color: "#3399cc"
+            }
+          };
+      
+          const paymentObject = new window.Razorpay(options);
+          paymentObject.open();
+        } catch (error) {
+          toast.error('Payment initialization failed');
+        }
+      };
+
     const handlePlaceOrder = async () => {
         try {
-            if (!selectedAddress || !selectedPayment) {
-                toast.error('Please select both address and payment method');
-                return;
-            }
-
-            const finalAmount = cartTotal - discountAmount; // Calculate final amount with discount
-
-            const orderPayload = {
-                addressId: selectedAddress,
-                paymentMethod: selectedPayment,
-                items: cartItems.map(item => ({
-                    productId: item.productId,
-                    selectedSize: item.selectedSize,
-                    quantity: item.quantity,
-                    price: item.price,
-                    status: 'pending'
-                })),
-                totalAmount: finalAmount 
-            };
-
-            console.log('Sending order payload:', orderPayload);
-
-
-            const response = await axiosInstance.post('/orders', orderPayload);
-
-            if (response.data.success) {
-                dispatch({ type: 'cart/clearCart' });
-                Swal.fire({
-                    title: 'Order Placed Successfully!',
-                    text: `Your order #${response.data.orderId} has been placed`,
-                    icon: 'success',
-                    confirmButtonText: 'View Order',
-                    showCancelButton: true,
-                    cancelButtonText: 'Continue Shopping'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        navigate('/profile/orders', {
-                            state: { orderId: response.data.orderId }
-                        });
-                    } else {
-                        navigate('/shop');
-                    }
-                });
-            }
+          if (!selectedAddress || !selectedPayment) {
+            toast.error('Please select both address and payment method');
+            return;
+          }
+      
+          // Create clean order payload
+          const orderPayload = {
+            addressId: selectedAddress,
+            paymentMethod: selectedPayment,
+            items: cartItems.map(item => ({
+              productId: item.productId,
+              selectedSize: item.selectedSize,
+              quantity: item.quantity,
+              price: item.price
+            })),
+            totalAmount: cartTotal - discountAmount
+          };
+      
+          // For online payment
+          if (selectedPayment === 'online') {
+            await initializeRazorpayPayment();
+            return;
+          }
+      
+          const response = await axiosInstance.post('/orders', orderPayload);
+      
+          if (response.data.success) {
+            dispatch({ type: 'cart/clearCart' });
+            Swal.fire({
+              title: 'Order Placed Successfully!',
+              text: `Your order #${response.data.orderId} has been placed`,
+              icon: 'success',
+              confirmButtonText: 'View Order',
+              showCancelButton: true,
+              cancelButtonText: 'Continue Shopping'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                navigate('/profile/orders');
+              } else {
+                navigate('/shop');
+              }
+            });
+          }
         } catch (error) {
-            console.error('Order placement failed:', error.response?.data || error);
-            toast.error(error.response?.data?.message || 'Failed to place order');
+          console.error('Order placement failed:', error);
+          toast.error('Failed to place order');
         }
-    };
+      };
 
+    
 
-    // const handleApplyCoupon = async () => {
-    //     try {
-    //         const response = await axiosInstance.post('/apply-coupon', {
-    //             code: couponCode
-    //         });
-    //         if (response.data.success) {
-    //             setDiscountAmount(response.data.cart.discount);
-    //             setSelectedCoupon(response.data.cart.couponCode);
-    //             toast.success('Coupon applied successfully');
-    //         }
-    //     } catch (error) {
-    //         toast.error(error.response?.data?.message || 'Failed to apply coupon');
-    //     }
-    // }
     const handleApplyCoupon = async () => {
         try {
             // Find the selected coupon's details
             const selectedCouponDetails = coupons.find(coupon => coupon.code === couponCode);
-            
+
             if (selectedCouponDetails && cartTotal < selectedCouponDetails.minimumPurchase) {
                 toast.info(`Minimum purchase of ₹${selectedCouponDetails.minimumPurchase} required for coupon ${couponCode}. Add items worth ₹${selectedCouponDetails.minimumPurchase - cartTotal} more to use this coupon!`);
                 return;
@@ -258,6 +316,41 @@ const Checkout = () => {
             toast.error('Failed to remove coupon');
         }
     };
+
+    const fetchWalletBalance = async () => {
+        try {
+            const response = await axiosInstance.get('/wallet/balance');
+            setWalletBalance(response.data.balance);
+        } catch (error) {
+            console.error('Failed to fetch wallet balance:', error);
+        }
+    };
+    const handleOrderCompletion = async (orderPayload) => {
+        try {
+          const response = await axiosInstance.post('/orders', orderPayload);
+          
+          if (response.data.success) {
+            dispatch({ type: 'cart/clearCart' });
+            Swal.fire({
+              title: 'Order Placed Successfully!',
+              text: `Your order #${response.data.orderId} has been placed`,
+              icon: 'success',
+              confirmButtonText: 'View Order',
+              showCancelButton: true,
+              cancelButtonText: 'Continue Shopping'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                navigate('/profile/orders');
+              } else {
+                navigate('/shop');
+              }
+            });
+          }
+        } catch (error) {
+          toast.error('Failed to complete order');
+        }
+      };
+    
     return (
         <>
             <Header />
@@ -318,6 +411,26 @@ const Checkout = () => {
                                     selected={selectedPayment === 'cod'}
                                     onSelect={() => setSelectedPayment('cod')}
                                 />
+
+                                <PaymentMethod
+                                    method="online"
+                                    title="Pay Online"
+                                    description="Pay securely with Razorpay"
+                                    icon={<CreditCard />}
+                                    selected={selectedPayment === 'online'}
+                                    onSelect={() => setSelectedPayment('online')}
+                                />
+
+                                {walletBalance > 0 && (
+                                    <PaymentMethod
+                                        method="wallet"
+                                        title="Pay with Wallet"
+                                        description={`Available balance: ₹${walletBalance}`}
+                                        icon={<Wallet />}
+                                        selected={selectedPayment === 'wallet'}
+                                        onSelect={() => setSelectedPayment('wallet')}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -357,7 +470,7 @@ const Checkout = () => {
                                         <span>Discount ({couponCode})</span>
                                         <div>
                                             <strong className="me-2">-₹{discountAmount}</strong>
-                                            <button 
+                                            <button
                                                 className="btn btn-sm btn-outline-danger"
                                                 onClick={handleRemoveCoupon}
                                                 title="Remove Coupon"
@@ -384,7 +497,7 @@ const Checkout = () => {
                                                 value={couponCode}
                                                 onChange={(e) => setCouponCode(e.target.value)}
                                             />
-                                            <button 
+                                            <button
                                                 className="btn btn-primary"
                                                 onClick={handleApplyCoupon}
                                                 disabled={!couponCode}
@@ -392,15 +505,15 @@ const Checkout = () => {
                                                 Apply
                                             </button>
                                         </div>
-                                        
+
                                         <div className="dropdown">
-                                            <button 
+                                            <button
                                                 className="btn btn-secondary dropdown-toggle w-100"
                                                 onClick={() => setShowCouponDropDown(!showCouponDropdown)}
                                             >
                                                 Available Coupons
                                             </button>
-                                            
+
                                             {showCouponDropdown && (
                                                 <div className="dropdown-menu show w-100">
                                                     {coupons.map(coupon => (
@@ -412,8 +525,8 @@ const Checkout = () => {
                                                             <strong>{coupon.code}</strong>
                                                             <br />
                                                             <small>
-                                                                {coupon.discountType === 'percentage' 
-                                                                    ? `${coupon.discountAmount}% off` 
+                                                                {coupon.discountType === 'percentage'
+                                                                    ? `${coupon.discountAmount}% off`
                                                                     : `₹${coupon.discountAmount} off`}
                                                             </small>
                                                         </button>
