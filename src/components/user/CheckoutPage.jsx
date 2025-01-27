@@ -97,7 +97,19 @@ const Checkout = () => {
 
     const fetchCoupons = async () => {
         try {
-            const response = await axiosInstance.get('/admin/coupons');
+            const token = localStorage.getItem('token');
+            console.log('dfghjkl;lkjhgfdToken',token);
+
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            
+            const response = await axiosInstance.get('/coupons', {
+                headers : {
+                    'Authorization' : `Bearer ${token}`
+                }
+            });
             setCoupons(response.data.coupons);
         } catch (error) {
             console.error('Failed to fetch coupons', error)
@@ -189,28 +201,19 @@ const Checkout = () => {
 
     const handleApplyCoupon = async () => {
         try {
-            console.log('Applying coupon:', { code: couponCode, cartTotal }); // Debug log
-            
             const response = await axiosInstance.post('/apply-coupon', {
                 code: couponCode,
                 cartTotal: cartTotal
             });
-            
-            console.log('Coupon response:', response.data); // Debug log
-            
             if (response.data.success) {
-                setDiscountAmount(response.data.discountAmount);
+                setDiscountAmount(response.data.discountAmount)
                 setSelectedCoupon(response.data.coupon);
-                toast.success('Coupon applied successfully');
+                toast.success('Coupon applied successfully')
             }
         } catch (error) {
-            console.error('Coupon error details:', {
-                message: error.message,
-                response: error.response?.data
-            });
-            toast.error(error.response?.data?.message || 'Failed to apply coupon');
+            toast.error(error.response?.data?.message || 'Failed to appluy coupon')
         }
-    };
+    }
 
     const handleCouponSelect = (coupon) => {
         setCouponCode(coupon.code);
@@ -233,7 +236,9 @@ const Checkout = () => {
             <Header />
             <div className="container py-4">
                 <div className="row">
+
                     <div className="col-md-7">
+
                         <div className="card mb-4">
                             <div className="card-header d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0">Shipping Addresses</h5>
@@ -260,6 +265,7 @@ const Checkout = () => {
                             </div>
                         </div>
 
+
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Payment Method</h5>
@@ -276,6 +282,7 @@ const Checkout = () => {
                             </div>
                         </div>
                     </div>
+
 
                     <div className="col-md-5">
                         <div className="card">
@@ -302,28 +309,11 @@ const Checkout = () => {
                                 ))}
 
                                 <hr />
-                                <div className="d-flex justify-content-between mb-2">
-                                    <span>Subtotal</span>
+                                <div className="d-flex justify-content-between">
+                                    <span>Total</span>
                                     <strong>₹{cartTotal}</strong>
                                 </div>
-                                {selectedCoupon && (
-                                    <div className="d-flex justify-content-between mb-2 text-success">
-                                        <span>
-                                            Discount
-                                            {selectedCoupon.discountType === 'percentage'
-                                                ? ` (${selectedCoupon.discountAmount}%)`
-                                                : ''}
-                                        </span>
-                                        <strong>-₹{discountAmount}</strong>
-                                    </div>
-                                )}
-                                <hr />
-                                <div className="d-flex justify-content-between fw-bold">
-                                    <span>Total</span>
-                                    <strong>₹{Math.max(0, cartTotal - discountAmount)}</strong>
-                                </div>
-
-                                <div className="card mb-4 mt-3">
+                                <div className="card mb-4">
                                     <div className="card-header">
                                         <h5 className="mb-0">Apply Coupon</h5>
                                     </div>
@@ -336,7 +326,7 @@ const Checkout = () => {
                                                 value={couponCode}
                                                 onChange={(e) => setCouponCode(e.target.value)}
                                             />
-                                            <button
+                                            <button 
                                                 className="btn btn-primary"
                                                 onClick={handleApplyCoupon}
                                                 disabled={!couponCode}
@@ -344,15 +334,15 @@ const Checkout = () => {
                                                 Apply
                                             </button>
                                         </div>
-
+                                        
                                         <div className="dropdown">
-                                            <button
+                                            <button 
                                                 className="btn btn-secondary dropdown-toggle w-100"
                                                 onClick={() => setShowCouponDropDown(!showCouponDropdown)}
                                             >
                                                 Available Coupons
                                             </button>
-
+                                            
                                             {showCouponDropdown && (
                                                 <div className="dropdown-menu show w-100">
                                                     {coupons.map(coupon => (
@@ -364,8 +354,8 @@ const Checkout = () => {
                                                             <strong>{coupon.code}</strong>
                                                             <br />
                                                             <small>
-                                                                {coupon.discountType === 'percentage'
-                                                                    ? `${coupon.discountAmount}% off`
+                                                                {coupon.discountType === 'percentage' 
+                                                                    ? `${coupon.discountAmount}% off` 
                                                                     : `₹${coupon.discountAmount} off`}
                                                             </small>
                                                         </button>

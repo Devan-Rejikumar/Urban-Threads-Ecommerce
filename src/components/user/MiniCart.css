@@ -1,0 +1,65 @@
+.mini-cart-button {
+    transition: all 0.3s ease;
+  }
+  
+  .mini-cart-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .mini-cart-dropdown {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  .mini-cart-item {
+    transition: all 0.3s ease;
+  }
+  
+  .mini-cart-item:hover {
+    background-color: #f9fafb;
+  }
+  
+  .quantity-button {
+    transition: all 0.2s ease;
+  }
+  
+  .quantity-button:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .remove-button {
+    transition: all 0.2s ease;
+  }
+  
+  .remove-button:hover {
+    text-decoration: underline;
+  }
+  
+  .view-cart-button {
+    transition: all 0.3s ease;
+  }
+  
+  .view-cart-button:hover {
+    background-color: #1f2937;
+  }
+  
+  .mini-cart-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #e5e7eb;
+  }
+  
+  .mini-cart-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .mini-cart-scrollbar::-webkit-scrollbar-track {
+    background: #e5e7eb;
+  }
+  
+  .mini-cart-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #9ca3af;
+    border-radius: 20px;
+    border: 2px solid #e5e7eb;
+  }
+  
+  
