@@ -151,16 +151,23 @@ const OrderDetails = () => {
           )}
         </div>
         <div className="col-md-6">
-          <h6>{item.productId.name}</h6>
-          <p className="text-muted mb-0">
-            Size: {item.selectedSize} | Quantity: {item.quantity}
-          </p>
-          {item.status === 'cancelled' && (
+        <h6>{item.productId.name}</h6>
+        <p className="text-muted mb-0">
+          Size: {item.selectedSize} | Quantity: {item.quantity}
+        </p>
+        {item.status === 'cancelled' && (
+          <>
             <p className="text-danger mb-0">
               Cancelled - Reason: {item.cancellationReason}
             </p>
-          )}
-        </div>
+            {item.refundStatus === 'processed' && (
+              <p className="text-success mb-0">
+                Refunded ₹{item.refundAmount} to wallet
+              </p>
+            )}
+          </>
+        )}
+      </div>
         <div className="col-md-4 text-end">
           <p className="fw-bold mb-0">₹{(item.price * item.quantity).toFixed(2)}</p>
           <p className="text-muted small mb-0">₹{item.price} each</p>

@@ -29,6 +29,7 @@ import OrderHistory from './components/user/OrderHistory.jsx';
 import OrderManagement from './components/admin/OrderManagement.jsx';
 import OrderDetails from './components/user/OrderDetails.jsx';
 import AdminCoupon from './components/admin/AdminCoupon.jsx';
+import WalletView from './pages/user/WalletView.jsx';
 
 function App() {
 
@@ -100,6 +101,7 @@ function App() {
   <Route path="/checkout" element={<CheckoutPage />} />
   <Route path="/profile/orders" element={<OrderHistory />} />
   <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
+  <Route path="/profile/wallet" element={<WalletView />} />
 
         <Route
           path="/admin-login"
