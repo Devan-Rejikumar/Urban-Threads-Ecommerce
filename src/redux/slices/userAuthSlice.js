@@ -1,5 +1,3 @@
-
-
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
@@ -34,15 +32,22 @@ const userAuthSlice = createSlice({
         },
         logout: (state) => {
             return initialState;
+        },
+        blockUser: (state) => {
+            state.isAuthenticated = false;
+            state.user = null;
+            state.token = null;
+            state.error = 'User is blocked';
         }
     }
-});
+}); 
 
 export const {
     loginStart: userLoginStart,
     loginSuccess: userLoginSuccess,
     loginFailure: userLoginFailure,
-    logout: userLogout
+    logout: userLogout,
+    blockUser: userBlock
 } = userAuthSlice.actions;
 
 export default userAuthSlice.reducer;

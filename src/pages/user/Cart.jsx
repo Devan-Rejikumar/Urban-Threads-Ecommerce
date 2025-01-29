@@ -3,17 +3,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { updateQuantity, removeFromCart, setCart } from '../../redux/slices/cartSlice';
 import axiosInstance from '../../utils/axiosInstance';
+import Footer from '../../components/user/Footer';
+import Header from '../../components/user/Header';
 
 const Cart = ({ show, onHide }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cartItems = useSelector(state => state.cart.items); 
+  const cartItems = useSelector(state => state.cart.items);
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
         const response = await axiosInstance.get('/cart');
-  
+
         const cartItems = response.data.items.map(item => ({
           productId: item.productId._id,
           name: item.productId.name,
@@ -28,7 +30,7 @@ const Cart = ({ show, onHide }) => {
       } catch (error) {
         console.error('Error fetching cart:', error);
         if (error.response?.status === 401) {
-       
+
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
@@ -53,7 +55,7 @@ const Cart = ({ show, onHide }) => {
         dispatch(updateQuantity({ productId, selectedSize, quantity: newQty }));
       } catch (error) {
         console.error('Failed to update quantity:', error);
-      
+
       }
     }
   };
@@ -64,7 +66,7 @@ const Cart = ({ show, onHide }) => {
       dispatch(removeFromCart({ productId, selectedSize }));
     } catch (error) {
       console.error('Failed to remove item:', error);
-    
+
     }
   };
 
@@ -81,131 +83,136 @@ const Cart = ({ show, onHide }) => {
   if (!show) return null;
 
   return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-dialog-scrollable modal-dialog-end" 
-           style={{ margin: '0 0 0 auto', height: '100vh', maxWidth: '400px' }}>
-        <div className="modal-content h-100">
-    
-          <div className="modal-header">
-            <h5 className="modal-title">Shopping Cart ({cartItems.length})</h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
-          </div>
+    <>
+    {/* <Header /> */}
+      <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal-dialog modal-dialog-scrollable modal-dialog-end"
+          style={{ margin: '0 0 0 auto', height: '100vh', maxWidth: '400px' }}>
+          <div className="modal-content h-100">
 
-     
-          <div className="modal-body">
-            {cartItems.length === 0 ? (
-              <div className="text-center py-5">
-                <p className="text-muted">Your cart is empty</p>
-              </div>
-            ) : (
-              <div className="cart-items">
-                {cartItems.map((item) => (
-                  <div key={`${item.productId}-${item.selectedSize}`} 
-                       className="card mb-3 border-0 border-bottom rounded-0">
-                    <div className="row g-0">
-                      <div className="col-4">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="img-fluid rounded"
-                          style={{ maxHeight: '120px', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <div className="col-8 ps-3">
-                        <div className="d-flex justify-content-between">
-                          <h6 className="mb-1">{item.name}</h6>
-                          <button
-                            className="btn btn-link p-0 text-danger"
-                            onClick={() => handleRemoveItem(item.productId, item.selectedSize)}
-                          >
-                            ×
-                          </button>
+            <div className="modal-header">
+              <h5 className="modal-title">Shopping Cart ({cartItems.length})</h5>
+              <button type="button" className="btn-close" onClick={onHide}></button>
+            </div>
+
+
+            <div className="modal-body">
+              {cartItems.length === 0 ? (
+                <div className="text-center py-5">
+                  <p className="text-muted">Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="cart-items">
+                  {cartItems.map((item) => (
+                    <div key={`${item.productId}-${item.selectedSize}`}
+                      className="card mb-3 border-0 border-bottom rounded-0">
+                      <div className="row g-0">
+                        <div className="col-4">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="img-fluid rounded"
+                            style={{ maxHeight: '120px', objectFit: 'cover' }}
+                          />
                         </div>
-                        <p className="text-muted small mb-1">Size: {item.selectedSize}</p>
-                        <p className="fw-bold mb-2">₹{item.price}</p>
-
-                        <div className="d-flex align-items-center">
-                          <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                        <div className="col-8 ps-3">
+                          <div className="d-flex justify-content-between">
+                            <h6 className="mb-1">{item.name}</h6>
                             <button
-                              className="btn btn-outline-secondary"
-                              onClick={() => handleQuantityChange(
-                                item.productId,
-                                item.selectedSize,
-                                item.quantity - 1,
-                                item.stock,
-                                item.maxPerPerson
-                              )}
-                              disabled={item.quantity <= 1}
+                              className="btn btn-link p-0 text-danger"
+                              onClick={() => handleRemoveItem(item.productId, item.selectedSize)}
                             >
-                              -
-                            </button>
-                            <span className="input-group-text bg-white border-secondary">
-                              {item.quantity}
-                            </span>
-                            <button
-                              className="btn btn-outline-secondary"
-                              onClick={() => handleQuantityChange(
-                                item.productId,
-                                item.selectedSize,
-                                item.quantity + 1,
-                                item.stock,
-                                item.maxPerPerson
-                              )}
-                              disabled={item.quantity >= Math.min(item.stock, item.maxPerPerson)}
-                            >
-                              +
+                              ×
                             </button>
                           </div>
-                          {item.stock <= 5 && (
-                            <span className="text-danger ms-2 small">
-                              Only {item.stock} left!
-                            </span>
-                          )}
+                          <p className="text-muted small mb-1">Size: {item.selectedSize}</p>
+                          <p className="fw-bold mb-2">₹{item.price}</p>
+
+                          <div className="d-flex align-items-center">
+                            <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                              <button
+                                className="btn btn-outline-secondary"
+                                onClick={() => handleQuantityChange(
+                                  item.productId,
+                                  item.selectedSize,
+                                  item.quantity - 1,
+                                  item.stock,
+                                  item.maxPerPerson
+                                )}
+                                disabled={item.quantity <= 1}
+                              >
+                                -
+                              </button>
+                              <span className="input-group-text bg-white border-secondary">
+                                {item.quantity}
+                              </span>
+                              <button
+                                className="btn btn-outline-secondary"
+                                onClick={() => handleQuantityChange(
+                                  item.productId,
+                                  item.selectedSize,
+                                  item.quantity + 1,
+                                  item.stock,
+                                  item.maxPerPerson
+                                )}
+                                disabled={item.quantity >= Math.min(item.stock, item.maxPerPerson)}
+                              >
+                                +
+                              </button>
+                            </div>
+                            {item.stock <= 5 && (
+                              <span className="text-danger ms-2 small">
+                                Only {item.stock} left!
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+            {cartItems.length > 0 && (
+              <div className="modal-footer flex-column">
+                <div className="w-100">
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted">Subtotal</span>
+                    <span>₹{cartTotal}</span>
                   </div>
-                ))}
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted">Shipping</span>
+                    <span>FREE</span>
+                  </div>
+                  <div className="d-flex justify-content-between fw-bold">
+                    <span>Total</span>
+                    <span>₹{cartTotal}</span>
+                  </div>
+                </div>
+                <div className="d-flex w-100 gap-2">
+                  <button
+                    className="btn btn-outline-dark flex-grow-1"
+                    onClick={handleViewCart}
+                  >
+                    View Cart
+                  </button>
+                  <button
+                    className="btn btn-dark flex-grow-1"
+                    onClick={handleCheckout}
+                  >
+                    Checkout
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-         
-          {cartItems.length > 0 && (
-            <div className="modal-footer flex-column">
-              <div className="w-100">
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Subtotal</span>
-                  <span>₹{cartTotal}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Shipping</span>
-                  <span>FREE</span>
-                </div>
-                <div className="d-flex justify-content-between fw-bold">
-                  <span>Total</span>
-                  <span>₹{cartTotal}</span>
-                </div>
-              </div>
-              <div className="d-flex w-100 gap-2">
-                <button 
-                  className="btn btn-outline-dark flex-grow-1"
-                  onClick={handleViewCart}
-                >
-                  View Cart
-                </button>
-                <button 
-                  className="btn btn-dark flex-grow-1"
-                  onClick={handleCheckout}
-                >
-                  Checkout
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+      {/* <Footer /> */}
+    </>
+
   );
 };
 

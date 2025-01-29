@@ -58,12 +58,32 @@ const Wishlist = () => {
 
     const handleAddToCart = async (product) => {
         try {
-            dispatch(addToCart({
-                ...product,
+            // Prepare the cart item data
+            const cartProduct = {
+                productId: product._id,
+                name: product.name,
+                image: product.images[0],
+                price: product.salePrice || product.originalPrice,
                 quantity: 1,
-                selectedSize: product.variants[0]?.size
-            }));
+                selectedSize: product.variants[0]?.size || 'M',
+                stock: product.variants[0]?.stock || 0,
+                maxPerPerson: 5
+            };
+    
+            // First make the API call to add to cart
+            await axiosInstance.post('/cart/add', {
+                productId: product._id,
+                quantity: 1,
+                selectedSize: cartProduct.selectedSize
+            });
+    
+            // Then update Redux state
+            dispatch(addToCart(cartProduct));
+            
+            // Remove from wishlist
             await handleRemoveFromWishlist(product._id);
+            
+            toast.success('Item added to cart');
         } catch (error) {
             console.error('Error adding to cart:', error);
             toast.error('Error adding item to cart');

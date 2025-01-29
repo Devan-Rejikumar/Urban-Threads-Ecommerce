@@ -9,8 +9,8 @@ import { toast } from 'react-toastify';
 const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  const [showOrderCancelDialog, setShowOrderCancelDialog] = useState(false);
+  const [orderCancelReason, setOrderCancelReason] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [error, setError] = useState(null);
   const { orderId } = useParams();
@@ -34,20 +34,27 @@ const OrderDetails = () => {
     fetchOrderDetails();
   }, [orderId]);
 
-  
 
   const handleCancelOrder = async () => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        const response = await axiosInstance.post(`/orders/${orderId}/cancel`);
-        if (response.data.success) {
-          toast.success(response.data.message);
-          setOrder(response.data.order);
-        }
-      } catch (error) {
-        const message = error.response?.data?.message || 'Failed to cancel order';
-        toast.error(message);
+    if (!orderCancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation');
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.post(`/orders/${orderId}/cancel`, {
+        reason: orderCancelReason
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setOrder(response.data.order);
+        setShowOrderCancelDialog(false);
+        setOrderCancelReason('');
       }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to cancel order';
+      toast.error(message);
     }
   };
 
@@ -74,8 +81,8 @@ const OrderDetails = () => {
       if (response.data.success) {
         toast.success(response.data.message);
         setOrder(response.data.order);
-        setShowCancelDialog(false);
-        setCancelReason('');
+        setShowOrderCancelDialog(false);
+        setOrderCancelReason('');
         setSelectedItem(null);
       }
     } catch (error) {
@@ -93,7 +100,7 @@ const OrderDetails = () => {
       itemId: item._id,
       name: item.productId.name
     });
-    setShowCancelDialog(true);
+    setShowOrderCancelDialog(true);
   };
 
   if (loading) {
@@ -229,15 +236,15 @@ const OrderDetails = () => {
         </div>
 
         {order && order.status === 'pending' && (
-          <div className="text-end mb-3">
-            <button
-              className="btn btn-danger"
-              onClick={handleCancelOrder}
-            >
-              Cancel Order
-            </button>
-          </div>
-        )}
+        <div className="text-end mb-3">
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowOrderCancelDialog(true)}
+          >
+            Cancel Order
+          </button>
+        </div>
+      )}
 
 <div className="card">
         <div className="card-header">
@@ -255,31 +262,33 @@ const OrderDetails = () => {
       <Footer />
 
       {/* Add Cancellation Dialog */}
-      <div className={`modal fade ${showCancelDialog ? 'show' : ''}`}
-           style={{ display: showCancelDialog ? 'block' : 'none' }}
+      <div className={`modal fade ${showOrderCancelDialog ? 'show' : ''}`}
+           style={{ display: showOrderCancelDialog ? 'block' : 'none' }}
            tabIndex="-1">
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Cancel Item</h5>
+              <h5 className="modal-title">Cancel Order</h5>
               <button type="button" className="btn-close" 
                       onClick={() => {
-                        setShowCancelDialog(false);
-                        setCancelReason('');
-                        setSelectedItem(null);
+                        setShowOrderCancelDialog(false);
+                        setOrderCancelReason('');
                       }}></button>
             </div>
             <div className="modal-body">
-              {selectedItem && (
-                <p>You are about to cancel: <strong>{selectedItem.name}</strong></p>
-              )}
+              <div className="alert alert-warning">
+                <strong>Note:</strong> {' '}
+                {order?.paymentMethod === 'online' ? 
+                  'Refund will be credited to your wallet.' : 
+                  'No refund will be processed for COD orders.'}
+              </div>
               <div className="form-group">
                 <label>Please provide a reason for cancellation:</label>
                 <textarea
                   className="form-control mt-2"
                   rows="3"
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
+                  value={orderCancelReason}
+                  onChange={(e) => setOrderCancelReason(e.target.value)}
                   placeholder="Enter your reason for cancellation..."
                 ></textarea>
               </div>
@@ -287,19 +296,18 @@ const OrderDetails = () => {
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" 
                       onClick={() => {
-                        setShowCancelDialog(false);
-                        setCancelReason('');
-                        setSelectedItem(null);
+                        setShowOrderCancelDialog(false);
+                        setOrderCancelReason('');
                       }}>Close</button>
               <button type="button" className="btn btn-danger" 
-                      onClick={handleItemCancel}>
+                      onClick={handleCancelOrder}>
                 Confirm Cancellation
               </button>
             </div>
           </div>
         </div>
       </div>
-      {showCancelDialog && <div className="modal-backdrop fade show"></div>}
+      {showOrderCancelDialog && <div className="modal-backdrop fade show"></div>}
     </>
   );
 };

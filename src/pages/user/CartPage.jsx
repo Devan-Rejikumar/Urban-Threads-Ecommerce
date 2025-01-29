@@ -1,23 +1,21 @@
-// src/pages/user/CartPage.js
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { updateQuantity, removeFromCart, setCart } from '../../redux/slices/cartSlice';
 import axiosInstance from '../../utils/axiosInstance';
-import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
-import { toast } from 'react-toastify';
+import Header from '../../components/user/Header';
 
 const CartPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart.items);
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
         const response = await axiosInstance.get('/cart');
+
         const cartItems = response.data.items.map(item => ({
           productId: item.productId._id,
           name: item.productId.name,
@@ -32,13 +30,16 @@ const CartPage = () => {
       } catch (error) {
         console.error('Error fetching cart:', error);
         if (error.response?.status === 401) {
-          navigate('/login');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
         }
       }
     };
 
     fetchCart();
-  }, [dispatch, navigate]);
+  }, [dispatch]);
+
+  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   const handleQuantityChange = async (productId, selectedSize, newQty, stock, maxPerPerson) => {
     if (newQty >= 1 && newQty <= stock && newQty <= maxPerPerson) {
@@ -50,7 +51,7 @@ const CartPage = () => {
         });
         dispatch(updateQuantity({ productId, selectedSize, quantity: newQty }));
       } catch (error) {
-        toast.error('Failed to update quantity');
+        console.error('Failed to update quantity:', error);
       }
     }
   };
@@ -59,26 +60,21 @@ const CartPage = () => {
     try {
       await axiosInstance.delete(`/cart/remove/${productId}/${selectedSize}`);
       dispatch(removeFromCart({ productId, selectedSize }));
-      toast.success('Item removed from cart');
     } catch (error) {
-      toast.error('Failed to remove item');
+      console.error('Failed to remove item:', error);
     }
-  };
-
-  const handleCheckout = () => {
-    navigate('/checkout');
   };
 
   return (
     <>
-      <Header />
-      <div className="container my-5">
-        <h2 className="mb-4">Shopping Cart</h2>
+    <Header />
+      <div className="container py-5">
+        <h1 className="mb-4">Shopping Cart</h1>
         {cartItems.length === 0 ? (
           <div className="text-center py-5">
             <p className="text-muted">Your cart is empty</p>
-            <button 
-              className="btn btn-primary mt-3"
+            <button
+              className="btn btn-primary"
               onClick={() => navigate('/')}
             >
               Continue Shopping
@@ -86,10 +82,10 @@ const CartPage = () => {
           </div>
         ) : (
           <div className="row">
-            <div className="col-md-8">
+            <div className="col-lg-8">
               {cartItems.map((item) => (
-                <div key={`${item.productId}-${item.selectedSize}`} 
-                     className="card mb-3">
+                <div key={`${item.productId}-${item.selectedSize}`}
+                  className="card mb-3">
                   <div className="row g-0">
                     <div className="col-md-4">
                       <img
@@ -110,9 +106,9 @@ const CartPage = () => {
                             Remove
                           </button>
                         </div>
-                        <p className="card-text">Size: {item.selectedSize}</p>
-                        <p className="card-text">₹{item.price}</p>
-                        
+                        <p className="text-muted mb-1">Size: {item.selectedSize}</p>
+                        <p className="fw-bold mb-3">₹{item.price}</p>
+
                         <div className="d-flex align-items-center">
                           <div className="input-group" style={{ width: '150px' }}>
                             <button
@@ -157,27 +153,27 @@ const CartPage = () => {
                 </div>
               ))}
             </div>
-            
-            <div className="col-md-4">
+
+            <div className="col-lg-4">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title">Order Summary</h5>
+                  <h5 className="card-title mb-4">Order Summary</h5>
                   <div className="d-flex justify-content-between mb-2">
-                    <span>Subtotal</span>
+                    <span className="text-muted">Subtotal</span>
                     <span>₹{cartTotal}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-2">
-                    <span>Shipping</span>
+                    <span className="text-muted">Shipping</span>
                     <span>FREE</span>
                   </div>
                   <hr />
-                  <div className="d-flex justify-content-between mb-3">
-                    <strong>Total</strong>
-                    <strong>₹{cartTotal}</strong>
+                  <div className="d-flex justify-content-between fw-bold mb-4">
+                    <span>Total</span>
+                    <span>₹{cartTotal}</span>
                   </div>
-                  <button 
-                    className="btn btn-primary w-100"
-                    onClick={handleCheckout}
+                  <button
+                    className="btn btn-dark w-100"
+                    onClick={() => navigate('/checkout')}
                   >
                     Proceed to Checkout
                   </button>
@@ -186,9 +182,11 @@ const CartPage = () => {
             </div>
           </div>
         )}
+
       </div>
       <Footer />
     </>
+
   );
 };
 

@@ -31,6 +31,7 @@ import OrderDetails from './components/user/OrderDetails.jsx';
 import AdminCoupon from './components/admin/AdminCoupon.jsx';
 import WalletView from './pages/user/WalletView.jsx';
 
+
 function App() {
 
   // const { user } = useSelector(state => state.userAuth);
@@ -102,6 +103,7 @@ function App() {
   <Route path="/profile/orders" element={<OrderHistory />} />
   <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
   <Route path="/profile/wallet" element={<WalletView />} />
+
 
         <Route
           path="/admin-login"

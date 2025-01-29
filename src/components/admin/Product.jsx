@@ -1,3 +1,5 @@
+
+
 // import React, { useState, useEffect, useCallback } from 'react';
 // import axios from 'axios';
 // import { Plus, Trash, Upload, X, Edit2 } from 'lucide-react';
@@ -94,18 +96,18 @@
 
 //   const handleToggleList = async (productId, currentStatus) => {
 //     console.log('Attempting to toggle product:', productId);
-    
+
 //     try {
-      
+
 //       const url = `http://localhost:5000/api/products/${productId}`;
 //       console.log('Making request to:', url);
-      
+
 //       const response = await axios.patch(
 //         url,
 //         { isListed: !currentStatus },
 //         { withCredentials: true }
 //       );
-  
+
 //       if (response.status === 200) {
 //         setProducts(prevProducts => 
 //           prevProducts.map(product => 
@@ -114,7 +116,7 @@
 //               : product
 //           )
 //         );
-        
+
 //         toast.success(`Product ${currentStatus ? 'unlisted' : 'listed'} successfully`);
 //       }
 //     } catch (error) {
@@ -123,17 +125,17 @@
 //         message: error.response?.data?.message,
 //         productId: productId
 //       });
-      
+
 //       toast.error('Failed to update product status');
-      
-     
+
+
 //       if (error.response?.status === 404) {
 //         console.log('Product not found, refreshing list...');
 //         fetchProducts();
 //       }
 //     }
 //   };
-           
+
 //   const handleInputChange = (e) => {
 //     const { name, value } = e.target;
 //     setFormData(prev => ({
@@ -203,10 +205,10 @@
 //         toast.error('At least one variant is required');
 //         return;
 //       }
-  
+
 
 //       const formDataToSend = new FormData();
-      
+
 
 //       formDataToSend.append('name', formData.name);
 //       formDataToSend.append('category', formData.category);
@@ -214,41 +216,41 @@
 //       formDataToSend.append('originalPrice', formData.originalPrice);
 //       formDataToSend.append('salePrice', formData.salePrice);
 //       formDataToSend.append('isListed', formData.isListed);
-  
-      
+
+
 //       const sanitizedVariants = formData.variants.map(variant => ({
 //         size: String(variant.size || 'M'),
 //         color: String(variant.color || '#000000'),
 //         stock: Number(variant.stock || 0)
 //       }));
-      
-  
+
+
 //       formDataToSend.append('variants', JSON.stringify(sanitizedVariants));
-  
-     
+
+
 //       const processedImages = [];
 //       for (const image of formData.images) {
 //         if (image) {
 //           if (image.startsWith('data:image')) {
-   
+
 //             processedImages.push(image);
 //           } else {
-    
+
 //             processedImages.push(image);
 //           }
 //         }
 //       }
-      
+
 
 //       processedImages.forEach((image) => {
 //         formDataToSend.append('images', image);
 //       });
-  
-      
+
+
 //       const url = isEditing 
 //         ? `http://localhost:5000/api/products/${editingProductId}`
 //         : 'http://localhost:5000/api/products';
-        
+
 //       const response = await axios({
 //         method: isEditing ? 'put' : 'post',
 //         url: url,
@@ -256,8 +258,8 @@
 //         headers: { 'Content-Type': 'multipart/form-data' },
 //         withCredentials: true
 //       });
-  
-   
+
+
 //       toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
 //       setShowCreateProductsDialog(false);
 //       setFormData(initialFormData);
@@ -269,7 +271,7 @@
 //       toast.error(error.response?.data?.message || 'Error processing product');
 //     }
 //   };
-  
+
 
 //   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
 //     setCropState(prev => ({
@@ -288,7 +290,7 @@
 
 //         const updatedImages = [...formData.images];
 //         updatedImages[cropState.currentImageIndex] = croppedImageUrl;
-        
+
 //         setFormData(prev => ({
 //           ...prev,
 //           images: updatedImages
@@ -308,11 +310,11 @@
 //     }
 //   };
 
- 
+
 //   const getCroppedImg = async (imageSrc, pixelCrop) => {
 //     const image = new Image();
 //     image.src = imageSrc;
-    
+
 //     const canvas = document.createElement('canvas');
 //     canvas.width = pixelCrop.width;
 //     canvas.height = pixelCrop.height;
@@ -366,7 +368,7 @@
 //             <div className="product-info">
 //               <h3>{product.name}</h3>
 //               <p>{product.description}</p>
-             
+
 //               <p>Orginal Price: ${product.originalPrice}</p>
 //               <p>Sale Price :${product.salePrice}</p>
 //               <p>Status: {product.isListed ? 'Listed' : 'Unlisted'}</p>
@@ -422,7 +424,7 @@
 //                   required
 //                 />
 //               </div>
-              
+
 //               <div className="form-group">
 //                 <label htmlFor="category">Category</label>
 //                 <select
@@ -668,6 +670,9 @@
 // export default Product;
 
 
+
+
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Trash, Upload, X, Edit2 } from 'lucide-react';
@@ -837,15 +842,27 @@ const Product = () => {
       variants: updatedVariants
     }));
   };
+  const validateImages = (images) => {
+    const hasAtLeastOneImage = images.some(img => img !== null);
+    return hasAtLeastOneImage;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if at least one image exists
+    if (!validateImages(formData.images)) {
+      toast.error('Please upload at least one product image');
+      return;
+    }
+  
     try {
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
         if (key === 'variants') {
           formDataToSend.append(key, JSON.stringify(formData[key]));
         } else if (key === 'images') {
+          // Only append non-null images
           formData[key].forEach(image => {
             if (image) formDataToSend.append('images', image);
           });
@@ -853,11 +870,11 @@ const Product = () => {
           formDataToSend.append(key, formData[key]);
         }
       });
-
+  
       const url = isEditing
         ? `http://localhost:5000/api/products/${editingProductId}`
         : 'http://localhost:5000/api/products';
-
+  
       const response = await axios({
         method: isEditing ? 'put' : 'post',
         url: url,
@@ -865,7 +882,7 @@ const Product = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true
       });
-
+  
       if (response.status === 200 || response.status === 201) {
         toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
         setShowModal(false);
@@ -1157,3 +1174,4 @@ const Product = () => {
 };
 
 export default Product;
+

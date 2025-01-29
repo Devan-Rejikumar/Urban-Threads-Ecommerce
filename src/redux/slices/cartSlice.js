@@ -8,20 +8,29 @@ const cartSlice = createSlice({
     },
     reducers: {
       addToCart: (state, action) => {
+        const newItem = action.payload;
         const existingItem = state.items.find(
-          item => item.productId === action.payload.productId && 
-                  item.selectedSize === action.payload.selectedSize
+            item => item.productId === newItem.productId && 
+                    item.selectedSize === newItem.selectedSize
         );
         
         if (existingItem) {
-          existingItem.quantity += action.payload.quantity;
+            existingItem.quantity = Math.min(
+                existingItem.quantity + newItem.quantity,
+                existingItem.maxPerPerson,
+                existingItem.stock
+            );
         } else {
-          state.items.push(action.payload);
+            state.items.push({
+                ...newItem,
+                quantity: Math.min(newItem.quantity, newItem.maxPerPerson, newItem.stock)
+            });
         }
-   
+    
+        // Recalculate totals
         state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
         state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-      },
+    },
       updateQuantity: (state, action) => {
         const { productId, selectedSize, quantity } = action.payload;
         const item = state.items.find(
