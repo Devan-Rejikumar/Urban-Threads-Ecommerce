@@ -30,6 +30,9 @@ import OrderManagement from './components/admin/OrderManagement.jsx';
 import OrderDetails from './components/user/OrderDetails.jsx';
 import AdminCoupon from './components/admin/AdminCoupon.jsx';
 import WalletView from './pages/user/WalletView.jsx';
+import OfferList from './components/admin/OfferList.jsx';
+import CreateOffer from './components/admin/CreateOffer.jsx';
+import EditOffer from './components/admin/EditOffer.jsx';
 
 
 function App() {
@@ -122,6 +125,9 @@ function App() {
           <Route path="categories/edit/:id" element={<EditCategory />} />
           <Route path="orders" element={<OrderManagement />} />
           <Route path="coupons" element={<AdminCoupon />} />
+          <Route path="offers" element={<OfferList />} />
+      <Route path="offers/create" element={<CreateOffer />} />
+      <Route path="offers/edit/:id" element={<EditOffer />} />
         </Route>
 
 
