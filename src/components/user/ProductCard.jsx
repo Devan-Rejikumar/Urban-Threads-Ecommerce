@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import './ProductCard.css';
 import { useNavigate } from 'react-router-dom';
+import { isValidOffer, getOfferBadgeText, calculateDiscountedPrice } from '../../utils/offerUtils';
 
 export const ProductCard = ({ 
   _id,
@@ -11,7 +12,10 @@ export const ProductCard = ({
   images = [],       
   rating = 0, 
   availability = 'in_stock', 
-  isNew = false 
+  isNew = false,
+  effectiveOffer,
+  category
+
 }) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
@@ -33,6 +37,10 @@ export const ProductCard = ({
     ? (typeof images[0] === 'string' ? images[0] : images[0]?.url)
     : null;
 
+    const finalPrice = effectiveOffer && isValidOffer(effectiveOffer) 
+    ? calculateDiscountedPrice(salePrice || originalPrice, effectiveOffer)
+    : (salePrice || originalPrice);
+
   return (
     <div className="product-card" onClick={handleClick}>
       <div className="product-image-container">
@@ -41,6 +49,11 @@ export const ProductCard = ({
         )}
         {isNew && (
           <span className="new-badge">New</span>
+        )}
+        {effectiveOffer && isValidOffer(effectiveOffer) && (
+          <span className="offer-badge">
+            {getOfferBadgeText(effectiveOffer)}
+          </span>
         )}
         {isLoading && !imageError && (
           <div className="image-loading">Loading...</div>
@@ -77,13 +90,11 @@ export const ProductCard = ({
           </div>
         )}
         <div className="price-container">
-          {salePrice ? (
-            <>
-              <p className="product-price sale-price">₹{salePrice.toFixed(2)}</p>
-              {/* <p className="product-price original-price">₹{originalPrice.toFixed(2)}</p> */}
-            </>
-          ) : (
-            <p className="product-price">₹{originalPrice.toFixed(2)}</p>
+          <p className="product-price">₹{finalPrice.toFixed(2)}</p>
+          {finalPrice < originalPrice && (
+            <p className="product-price original-price">
+              ₹{originalPrice.toFixed(2)}
+            </p>
           )}
         </div>
       </div>

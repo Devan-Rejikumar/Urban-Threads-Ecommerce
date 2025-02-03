@@ -4,114 +4,167 @@ import axiosInstance from "../../../utils/axiosInstance";
 import Header from "../Header";
 import { Fragment } from "react";
 import Footer from "../Footer";
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 
 
 const AddressForm = ({ initialData, onSubmit, onCancel }) => {
-    const [formData, setFormData] = useState(initialData || {
-        firstName: '',
-        lastName: '',
-        phoneNumber: '',
-        streetAddress: '',
-        city: '',
-        state: '',
-        pincode: '',
-        isDefault: false
+    const validationSchema = Yup.object({
+        firstName: Yup.string().required('First Name is required'),
+        lastName : Yup.string().required('Last Name is required'),
+        phoneNumber : Yup.string().required('Phone Number is required').matches(/^[0-9]{10}$/, "Phone Number must be 10 digits"),
+         streetAddress : Yup.string().required('Street Address is required'),
+         city : Yup.string().required('City is required'),
+         state : Yup.string().required('State is required'),
+         pincode : Yup.string().required('Pincode is required').matches(/^[0-9]{6}$/,"Pincode must be 6 digits"),
+         isDefault : Yup.boolean(),
+    })
+
+    const formik = useFormik({
+        initialValues: initialData || {
+            firstName: '',
+            lastName: '',
+            phoneNumber: '',
+            streetAddress: '',
+            city: '',
+            state: '',
+            pincode: '',
+            isDefault: false
+        },
+        validationSchema,
+        onSubmit: (values) => {
+            onSubmit(values);
+        },
     });
 
-    // Update form data when initialData changes
     useEffect(() => {
         if (initialData) {
-            setFormData(initialData);
+            formik.setValues(initialData);
         }
     }, [initialData]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSubmit(formData);
-    };
+    // const handleSubmit = (e) => {
+    //     e.preventDefault();
+    //     onSubmit(formData);
+    // };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={formik.handleSubmit}>
             <div className="row mb-3">
                 <div className="col-md-6">
                     <label htmlFor="firstName" className="form-label">First Name</label>
                     <input
                         type="text"
-                        className="form-control"
+                        className={`form-control ${formik.touched.firstName && formik.errors.firstName ? 'is-invalid' : ''}`}
                         id="firstName"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        name="firstName"
+                        value={formik.values.firstName}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         required
                     />
+                    {formik.touched.firstName && formik.errors.firstName ? (
+                        <div className="invalid-feedback">{formik.errors.firstName}</div>
+                    ) : null}
                 </div>
                 <div className="col-md-6">
                     <label htmlFor="lastName" className="form-label">Last Name</label>
                     <input
                         type="text"
-                        className="form-control"
+                        className={`form-control ${formik.touched.lastName && formik.errors.lastName ? 'is-invalid' : ''}`}
                         id="lastName"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        name="lastName"
+                        value={formik.values.lastName}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         required
                     />
+                    {formik.touched.lastName && formik.errors.lastName ? (
+                        <div className="invalid-feedback">{formik.errors.lastName}</div>
+                    ) : null}
                 </div>
             </div>
             <div className="mb-3">
                 <label htmlFor="phoneNumber" className="form-label">Phone Number</label>
                 <input
                     type="tel"
-                    className="form-control"
+                    className={`form-control ${formik.touched.phoneNumber && formik.errors.phoneNumber ? 'is-invalid' : ''}`}
                     id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    name="phoneNumber"
+                    value={formik.values.phoneNumber}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                     required
                 />
+                {formik.touched.phoneNumber && formik.errors.phoneNumber ? (
+                    <div className="invalid-feedback">{formik.errors.phoneNumber}</div>
+                ) : null}
             </div>
             <div className="mb-3">
                 <label htmlFor="streetAddress" className="form-label">Street Address</label>
                 <input
                     type="text"
-                    className="form-control"
+                    className={`form-control ${formik.touched.streetAddress && formik.errors.streetAddress ? 'is-invalid' : ''}`}
                     id="streetAddress"
-                    value={formData.streetAddress}
-                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                    name="streetAddress"
+                    value={formik.values.streetAddress}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                     required
                 />
+                {formik.touched.streetAddress && formik.errors.streetAddress ? (
+                    <div className="invalid-feedback">{formik.errors.streetAddress}</div>
+                ) : null}
             </div>
             <div className="row mb-3">
                 <div className="col-md-6">
                     <label htmlFor="city" className="form-label">City</label>
                     <input
                         type="text"
-                        className="form-control"
+                        className={`form-control ${formik.touched.city && formik.errors.city ? 'is-invalid' : ''}`}
                         id="city"
-                        value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        name="city"
+                        value={formik.values.city}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         required
                     />
+                    {formik.touched.city && formik.errors.city ? (
+                        <div className="invalid-feedback">{formik.errors.city}</div>
+                    ) : null}
                 </div>
                 <div className="col-md-6">
                     <label htmlFor="state" className="form-label">State</label>
                     <input
                         type="text"
-                        className="form-control"
+                        className={`form-control ${formik.touched.state && formik.errors.state ? 'is-invalid' : ''}`}
                         id="state"
-                        value={formData.state}
-                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        name="state"
+                        value={formik.values.state}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         required
                     />
+                    {formik.touched.state && formik.errors.state ? (
+                        <div className="invalid-feedback">{formik.errors.state}</div>
+                    ) : null}
                 </div>
             </div>
             <div className="mb-3">
                 <label htmlFor="pincode" className="form-label">Pincode</label>
                 <input
                     type="text"
-                    className="form-control"
+                    className={`form-control ${formik.touched.pincode && formik.errors.pincode ? 'is-invalid' : ''}`}
                     id="pincode"
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                    name="pincode"
+                    value={formik.values.pincode}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                     required
                 />
+                {formik.touched.pincode && formik.errors.pincode ? (
+                    <div className="invalid-feedback">{formik.errors.pincode}</div>
+                ) : null}
             </div>
             <div className="mb-3">
                 <div className="form-check">
@@ -119,8 +172,9 @@ const AddressForm = ({ initialData, onSubmit, onCancel }) => {
                         type="checkbox"
                         className="form-check-input"
                         id="isDefault"
-                        checked={formData.isDefault}
-                        onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                        name="isDefault"
+                        checked={formik.values.isDefault}
+                        onChange={formik.handleChange}
                     />
                     <label className="form-check-label" htmlFor="isDefault">
                         Set as default address

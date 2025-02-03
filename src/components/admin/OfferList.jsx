@@ -18,11 +18,7 @@ const OfferList = () => {
         try {
             const response = await axios.get('http://localhost:5000/api/admin/offers', {
                 withCredentials : true,
-                // headers: {
-                //     'Accept': 'application/json',
-                //     'Content-Type': 'application/json'
-                // }
-
+             
             });
             if(response.status === 200){
                 console.log("rrrrrrrrrrrrrr",response)

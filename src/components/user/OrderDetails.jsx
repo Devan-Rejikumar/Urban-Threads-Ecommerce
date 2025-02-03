@@ -4,7 +4,8 @@ import { ArrowLeft, Package } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import Header from './Header';
 import Footer from './Footer';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const OrderDetails = () => {
   const [order, setOrder] = useState(null);
@@ -47,10 +48,17 @@ const OrderDetails = () => {
       });
 
       if (response.data.success) {
-        toast.success(response.data.message);
         setOrder(response.data.order);
         setShowOrderCancelDialog(false);
         setOrderCancelReason('');
+
+        // Show success message
+        toast.success('Order cancelled successfully');
+
+        // Show refund message if applicable
+        if (response.data.refundProcessed) {
+          toast.success(`Refund of ₹${response.data.order.refundAmount} has been credited to your wallet`);
+        }
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to cancel order';
@@ -76,14 +84,22 @@ const OrderDetails = () => {
         reason: cancelReason
       });
       
-      console.log('Cancel response:', response.data); // Debug log
+      console.log('Cancel response:', response.data); 
 
       if (response.data.success) {
-        toast.success(response.data.message);
         setOrder(response.data.order);
         setShowOrderCancelDialog(false);
         setOrderCancelReason('');
         setSelectedItem(null);
+
+        // Show success message
+        toast.success('Item cancelled successfully');
+
+        // Show refund message if applicable
+        const cancelledItem = response.data.order.items.find(item => item._id === selectedItem.itemId);
+        if (cancelledItem && cancelledItem.refundStatus === 'processed') {
+          toast.success(`Refund of ₹${cancelledItem.refundAmount} has been credited to your wallet`);
+        }
       }
     } catch (error) {
       console.error('Cancel item error:', {
@@ -261,7 +277,7 @@ const OrderDetails = () => {
       </div>
       <Footer />
 
-      {/* Add Cancellation Dialog */}
+
       <div className={`modal fade ${showOrderCancelDialog ? 'show' : ''}`}
            style={{ display: showOrderCancelDialog ? 'block' : 'none' }}
            tabIndex="-1">
@@ -308,6 +324,17 @@ const OrderDetails = () => {
         </div>
       </div>
       {showOrderCancelDialog && <div className="modal-backdrop fade show"></div>}
+      <ToastContainer
+      position="top-right"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+    />
     </>
   );
 };

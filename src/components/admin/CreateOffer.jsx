@@ -15,7 +15,7 @@ const validationSchema = Yup.object().shape({
         .required('Enter discount value')
         .positive('Must be positive')
         .when('discountType', (discountType, schema) => {
-            console.log('Discount Type:', discountType); // Debugging
+            console.log('Discount Typeddddddddddddddddd:', discountType); 
             if (discountType === 'percentage') {
                 return schema.max(100, 'Cannot exceed 100%');
             }

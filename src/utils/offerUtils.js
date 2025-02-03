@@ -1,69 +1,63 @@
-export const calculateDiscountedPrice = (originalPrice, offer) => {
-    if (!offer || !isValidOffer(offer)) {
-        return originalPrice;
-    }
-
-    let discountAmount = 0;
-    if (offer.discountType === 'percentage') {
-        discountAmount = (originalPrice * offer.discountValue) / 100;
-    } else {
-        discountAmount = offer.discountValue;
-    }
-
-
-    if (offer.maxDiscountAmount) {
-        discountAmount = Math.min(discountAmount, offer.maxDiscountAmount);
-    }
-
-    return Math.max(originalPrice - discountAmount, 0);
-};
-
-
 export const isValidOffer = (offer) => {
-    if (!offer || !offer.isActive) return false;
-
-    const now = new Date();
-    const startDate = new Date(offer.startDate);
-    const endDate = new Date(offer.endDate);
-
-    return now >= startDate && now <= endDate;
+  if (!offer) return false;
+  
+  const now = new Date();
+  const startDate = new Date(offer.startDate);
+  const endDate = new Date(offer.endDate);
+  
+  return offer.isActive && now >= startDate && now <= endDate;
 };
 
 
-export const getBestOffer = (product, category) => {
-    const productOffer = product?.currentOffer;
-    const categoryOffer = category?.currentOffer;
+export const getApplicableOffer = (product, categoryOffer) => {
+  const productOffer = product?.currentOffer;
+  
+  if (!isValidOffer(productOffer) && !isValidOffer(categoryOffer)) {
+    return null;
+  }
+  
 
-    if (!productOffer && !categoryOffer) return null;
-    if (!productOffer) return isValidOffer(categoryOffer) ? categoryOffer : null;
-    if (!categoryOffer) return isValidOffer(productOffer) ? productOffer : null;
+  if (!isValidOffer(productOffer)) return categoryOffer;
+  if (!isValidOffer(categoryOffer)) return productOffer;
+  
 
-   
-    const priceWithProductOffer = calculateDiscountedPrice(product.salePrice, productOffer);
-    const priceWithCategoryOffer = calculateDiscountedPrice(product.salePrice, categoryOffer);
+  const getDiscountAmount = (price, offer) => {
+    if (offer.discountType === 'percentage') {
+      return (price * offer.discountValue) / 100;
+    }
+    return offer.discountValue;
+  };
+  
 
-    return priceWithProductOffer <= priceWithCategoryOffer ? productOffer : categoryOffer;
+  const samplePrice = 1000;
+  const productDiscount = getDiscountAmount(samplePrice, productOffer);
+  const categoryDiscount = getDiscountAmount(samplePrice, categoryOffer);
+  
+  return productDiscount >= categoryDiscount ? productOffer : categoryOffer;
+};
+
+
+export const calculateDiscountedPrice = (originalPrice, offer) => {
+  if (!isValidOffer(offer)) return originalPrice;
+  
+  if (offer.discountType === 'percentage') {
+    const discount = (originalPrice * offer.discountValue) / 100;
+    return Math.max(originalPrice - discount, 0);
+  } else {
+    return Math.max(originalPrice - offer.discountValue, 0);
+  }
 };
 
 
 export const getOfferBadgeText = (offer) => {
-    if (!isValidOffer(offer)) return '';
-
-    if (offer.discountType === 'percentage') {
-        return `${offer.discountValue}% OFF`;
-    }
-    return `₹${offer.discountValue} OFF`;
+  if (!isValidOffer(offer)) return '';
+  
+  return offer.discountType === 'percentage'
+    ? `${offer.discountValue}% OFF`
+    : `₹${offer.discountValue} OFF`;
 };
 
-export const getOfferStatus = (offer) => {
-    if (!offer) return 'no-offer';
-    if (!offer.isActive) return 'inactive';
-
-    const now = new Date();
-    const startDate = new Date(offer.startDate);
-    const endDate = new Date(offer.endDate);
-
-    if (now < startDate) return 'upcoming';
-    if (now > endDate) return 'expired';
-    return 'active';
+export const calculateDiscountPercentage = (originalPrice, finalPrice) => {
+  if (originalPrice <= 0 || finalPrice >= originalPrice) return 0;
+  return Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
 };

@@ -37,7 +37,7 @@ const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
                     <Edit size={16} />
                 </button>
                 {isSelected && (
-                    <span className="badge bg-primary">Selected</span>
+                    <span className="badge bg-primary">Selecte</span>
                 )}
             </div>
         </div>
@@ -157,68 +157,68 @@ const Checkout = () => {
 
     const initializeRazorpayPayment = async () => {
         try {
-          const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-          
-          if (!res) {
-            toast.error('Razorpay SDK failed to load');
-            return;
-          }
-      
-          const response = await axiosInstance.post('/payment/create-order', {
-            totalAmount: cartTotal - discountAmount
-          });
-      
-          const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-            amount: response.data.order.amount,
-            currency: "INR",
-            name: "Urban Threads",
-            description: "Payment for order",
-            order_id: response.data.order.id,
-            handler: async function (response) {
-              try {
-                const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature
-                });
-      
-                if (verifyResponse.data.success) {
-                  const orderPayload = {
-                    addressId: selectedAddress,
-                    paymentMethod: 'online',
-                    items: cartItems.map(item => ({
-                      productId: item.productId,
-                      selectedSize: item.selectedSize,
-                      quantity: item.quantity,
-                      price: item.price
-                    })),
-                    totalAmount: cartTotal - discountAmount,
-                    razorpayOrderId: response.razorpay_order_id,
-                    razorpayPaymentId: response.razorpay_payment_id
-                  };
-      
-                  await handleOrderCompletion(orderPayload);
-                }
-              } catch (error) {
-                toast.error('Payment verification failed');
-              }
-            },
-            prefill: {
-              name: "Customer Name",
-              email: "customer@example.com"
-            },
-            theme: {
-              color: "#3399cc"
+            const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+
+            if (!res) {
+                toast.error('Razorpay SDK failed to load');
+                return;
             }
-          };
-      
-          const paymentObject = new window.Razorpay(options);
-          paymentObject.open();
+
+            const response = await axiosInstance.post('/payment/create-order', {
+                totalAmount: cartTotal - discountAmount
+            });
+
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: response.data.order.amount,
+                currency: "INR",
+                name: "Urban Threads",
+                description: "Payment for order",
+                order_id: response.data.order.id,
+                handler: async function (response) {
+                    try {
+                        const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+
+                        if (verifyResponse.data.success) {
+                            const orderPayload = {
+                                addressId: selectedAddress,
+                                paymentMethod: 'online',
+                                items: cartItems.map(item => ({
+                                    productId: item.productId,
+                                    selectedSize: item.selectedSize,
+                                    quantity: item.quantity,
+                                    price: item.price
+                                })),
+                                totalAmount: cartTotal - discountAmount,
+                                razorpayOrderId: response.razorpay_order_id,
+                                razorpayPaymentId: response.razorpay_payment_id
+                            };
+
+                            await handleOrderCompletion(orderPayload);
+                        }
+                    } catch (error) {
+                        toast.error('Payment verification failed');
+                    }
+                },
+                prefill: {
+                    name: "Customer Name",
+                    email: "customer@example.com"
+                },
+                theme: {
+                    color: "#3399cc"
+                }
+            };
+
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.open();
         } catch (error) {
-          toast.error('Payment initialization failed');
+            toast.error('Payment initialization failed');
         }
-      };
+    };
 
     const handlePlaceOrder = async () => {
         try {
@@ -227,7 +227,13 @@ const Checkout = () => {
             return;
           }
       
-          // Create clean order payload
+          const finalAmount = cartTotal - discountAmount;
+      
+          if (selectedPayment === 'wallet' && walletBalance < finalAmount) {
+            toast.error('Insufficient wallet balance');
+            return;
+          }
+      
           const orderPayload = {
             addressId: selectedAddress,
             paymentMethod: selectedPayment,
@@ -235,12 +241,25 @@ const Checkout = () => {
               productId: item.productId,
               selectedSize: item.selectedSize,
               quantity: item.quantity,
-              price: item.price
+              price: item.price,
             })),
-            totalAmount: cartTotal - discountAmount
+            totalAmount: finalAmount,
           };
       
-          // For online payment
+          console.log('Order Payload:', orderPayload); // Log the payload
+      
+          if (selectedPayment === 'wallet') {
+            const walletResponse = await axiosInstance.post('/wallet/debit', {
+              amount: finalAmount,
+              description: `Payment for order`,
+            });
+      
+            if (!walletResponse.data.success) {
+              toast.error('Failed to deduct wallet balance');
+              return;
+            }
+          }
+      
           if (selectedPayment === 'online') {
             await initializeRazorpayPayment();
             return;
@@ -256,7 +275,7 @@ const Checkout = () => {
               icon: 'success',
               confirmButtonText: 'View Order',
               showCancelButton: true,
-              cancelButtonText: 'Continue Shopping'
+              cancelButtonText: 'Continue Shopping',
             }).then((result) => {
               if (result.isConfirmed) {
                 navigate('/profile/orders');
@@ -264,6 +283,8 @@ const Checkout = () => {
                 navigate('/shop');
               }
             });
+          } else {
+            toast.error('Failed to place order');
           }
         } catch (error) {
           console.error('Order placement failed:', error);
@@ -271,11 +292,11 @@ const Checkout = () => {
         }
       };
 
-    
+
 
     const handleApplyCoupon = async () => {
         try {
-            // Find the selected coupon's details
+
             const selectedCouponDetails = coupons.find(coupon => coupon.code === couponCode);
 
             if (selectedCouponDetails && cartTotal < selectedCouponDetails.minimumPurchase) {
@@ -319,42 +340,61 @@ const Checkout = () => {
 
     const fetchWalletBalance = async () => {
         try {
-            const response = await axiosInstance.get('/wallet/balance');
-            setWalletBalance(response.data.balance);
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                console.error('No authentication token found');
+                return;
+            }
+
+            const response = await axiosInstance.get('/wallet', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+          
+            if (response.data && response.data.wallet && typeof response.data.wallet.balance === 'number') {
+                setWalletBalance(response.data.wallet.balance);
+            } else {
+                console.error('Invalid wallet balance format received:', response.data);
+                setWalletBalance(0);
+            }
         } catch (error) {
             console.error('Failed to fetch wallet balance:', error);
+            setWalletBalance(0);
         }
     };
     const handleOrderCompletion = async (orderPayload) => {
         try {
-          const response = await axiosInstance.post('/orders', orderPayload);
-          
-          if (response.data.success) {
-            dispatch({ type: 'cart/clearCart' });
-            Swal.fire({
-              title: 'Order Placed Successfully!',
-              text: `Your order #${response.data.orderId} has been placed`,
-              icon: 'success',
-              confirmButtonText: 'View Order',
-              showCancelButton: true,
-              cancelButtonText: 'Continue Shopping'
-            }).then((result) => {
-              if (result.isConfirmed) {
-                navigate('/profile/orders');
-              } else {
-                navigate('/shop');
-              }
-            });
-          }
+            const response = await axiosInstance.post('/orders', orderPayload);
+
+            if (response.data.success) {
+                dispatch({ type: 'cart/clearCart' });
+                Swal.fire({
+                    title: 'Order Placed Successfully!',
+                    text: `Your order #${response.data.orderId} has been placed`,
+                    icon: 'success',
+                    confirmButtonText: 'View Order',
+                    showCancelButton: true,
+                    cancelButtonText: 'Continue Shopping'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        navigate('/profile/orders');
+                    } else {
+                        navigate('/shop');
+                    }
+                });
+            }
         } catch (error) {
-          toast.error('Failed to complete order');
+            toast.error('Failed to complete order');
         }
-      };
-    
+    };
+
     return (
         <>
             <Header />
-            {/* Add ToastContainer at the top level */}
+
             <ToastContainer
                 position="top-right"
                 autoClose={3000}
@@ -375,7 +415,7 @@ const Checkout = () => {
                             <div className="card-header d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0">Shipping Addresses</h5>
                                 <button
-                                    className="btn btn-outline-primary btn-sm"
+                                    className="btn btn-outline-success btn-sm"
                                     onClick={() => {
                                         setEditingAddress(null);
                                         setShowAddressModal(true);
