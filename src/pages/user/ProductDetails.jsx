@@ -271,7 +271,7 @@ const ProductDetail = () => {
                   <>
                     <span className="original-price">MRP ₹{originalPrice}</span>
                     <span className="discount">
-                      ({Math.round((originalPrice - salePrice) / originalPrice * 100)}% OFF)
+                      ({Math.ceil((originalPrice - salePrice) / originalPrice * 100)}% OFF)
                     </span>
                   </>
                 )}

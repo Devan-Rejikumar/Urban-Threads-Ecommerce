@@ -1,0 +1,30 @@
+.sales-report {
+    padding: 20px;
+}
+
+.card-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.controls {
+    max-width: 400px;
+    margin-bottom: 30px;
+}
+
+.date-range {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.download-buttons {
+    margin: 20px 0;
+}
+
+.table {
+    width: 100%;
+    margin-top: 20px;
+}

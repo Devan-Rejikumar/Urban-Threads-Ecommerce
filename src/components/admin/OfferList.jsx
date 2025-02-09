@@ -66,8 +66,8 @@ const OfferList = () => {
                             <th>Name</th>
                             <th>Type</th>
                             <th>Discount</th>
-                            <th>Valid Till</th>
-                            <th>Status</th>
+                           
+                            {/* <th>Status</th> */}
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -78,14 +78,14 @@ const OfferList = () => {
                                 <td>{offer.applicableType}</td>
                                 <td>
                                     {offer.discountValue}
-                                    {offer.discountType === 'percentage' ? '%' : '₹'}
+                                    {offer.discountType === 'percentage' ? '%' : ''}
                                 </td>
-                                <td>{new Date(offer.endDate).toLocaleDateString()}</td>
+{/*                             
                                 <td>
                                     <span className={`badge ${offer.isActive ? 'bg-success' : 'bg-danger'}`}>
                                         {offer.isActive ? 'Active' : 'Inactive'}
                                     </span>
-                                </td>
+                                </td> */}
                                 <td>
                                     <button
                                         className="btn btn-sm btn-outline-primary me-2"

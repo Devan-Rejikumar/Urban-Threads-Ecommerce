@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../utils/axiosInstance';
-import { Search, Filter, ShoppingBag, Truck, Package, CheckCircle, MoreHorizontal } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Truck, Package, CheckCircle, MoreHorizontal,XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { loadScript } from '../../utils/razorpay'
 import Header from './Header';
 import Footer from './Footer';
 
@@ -10,6 +11,65 @@ const statusIcons = {
     delivered: <CheckCircle className="text-success" />,
     shipped: <Truck className="text-primary" />,
     pending: <Package className="text-warning" />,
+    failed: <XCircle className="text-danger" />,
+};
+
+const OrderCard = ({ order, onRetryPayment }) => {
+    const navigate = useNavigate();
+    
+    return (
+        <div className="card h-100 shadow-sm">
+            <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="card-title mb-0">Order #{order.orderId}</h5>
+                    <div>
+                        <span className={`badge ${order.status === 'delivered' ? 'bg-success' : 'bg-light text-dark'} me-2`}>
+                            {statusIcons[order.status]}
+                            <span className="ms-2">{order.status}</span>
+                        </span>
+                        {order.paymentStatus === 'failed' && (
+                            <span className="badge bg-danger">
+                                <XCircle size={14} className="me-1" />
+                                Payment Failed
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div className="card-text">
+                    <div className="d-flex justify-content-between mb-2">
+                        <span>Order Date:</span>
+                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                        <span>Total Items:</span>
+                        <span>{order.items.length}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                        <span>Amount:</span>
+                        <span>₹{order.totalAmount}</span>
+                    </div>
+                </div>
+                <div className="d-flex gap-2 mt-3">
+                    <button
+                        className="btn btn-primary flex-grow-1"
+                        onClick={() => navigate(`/profile/orders/${order.orderId}`)}
+                    >
+                        <ShoppingBag size={18} className="me-2" />
+                        View Details
+                    </button>
+                    {order.paymentStatus === 'failed' && (
+                        <button
+                            className="btn btn-success"
+                            onClick={() => onRetryPayment(order)}
+                        >
+                            <RefreshCw size={18} className="me-2" />
+                            Retry Payment
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default function OrdersPage() {
@@ -68,6 +128,65 @@ export default function OrdersPage() {
                 console.error('Error cancelling order:', error);
                 toast.error(error.response?.data?.message || 'Failed to cancel order');
             }
+        }
+    };
+
+    const handleRetryPayment = async (order) => {
+        try {
+            const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+            
+            if (!res) {
+                toast.error('Razorpay SDK failed to load');
+                return;
+            }
+
+            const response = await axiosInstance.post('/payment/retry-payment', {
+                orderId: order.orderId
+            });
+
+            if (!response.data.success) {
+                toast.error(response.data.message || 'Failed to initialize payment');
+                return;
+            }
+
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: response.data.order.amount,
+                currency: "INR",
+                name: "Urban Threads",
+                description: `Payment retry for order ${order.orderId}`,
+                order_id: response.data.order.id,
+                handler: async function (response) {
+                    try {
+                        const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
+                            orderId: order.orderId,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+
+                        if (verifyResponse.data.success) {
+                            toast.success('Payment successful!');
+                            fetchOrders(currentPage);
+                        }
+                    } catch (error) {
+                        toast.error(error.response?.data?.message || 'Payment verification failed');
+                    }
+                },
+                prefill: {
+                    name: order.addressId?.firstName,
+                    email: order.userId?.email,
+                    contact: order.addressId?.phoneNumber
+                },
+                theme: {
+                    color: "#3399cc"
+                }
+            };
+
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.open();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to initialize payment retry');
         }
     };
 

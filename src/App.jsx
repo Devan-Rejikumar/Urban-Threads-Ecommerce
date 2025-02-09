@@ -33,52 +33,19 @@ import WalletView from './pages/user/WalletView.jsx';
 import OfferList from './components/admin/OfferList.jsx';
 import CreateOffer from './components/admin/CreateOffer.jsx';
 import EditOffer from './components/admin/EditOffer.jsx';
-
+import SalesReport from './components/admin/Report.jsx';
+import Dashboard from './components/admin/Dashboard.jsx';
 
 function App() {
-
-  // const { user } = useSelector(state => state.userAuth);
-
-  // const dispatch = useDispatch();
-  // if(user) {
-  //   useEffect(() => {
-  //     const fetchCart = async () => {
-  //       try {
-  //         const response = await axiosInstance.get('/cart');
-  //         const cartItems = response.data.items.map(item => ({
-  //           productId: item.productId._id,
-  //           name: item.productId.name,
-  //           price: item.price,
-  //           selectedSize: item.selectedSize,
-  //           quantity: item.quantity,
-  //           image: item.productId.images[0]?.url || item.productId.images[0],
-  //           stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
-  //           maxPerPerson: 5
-  //         }));
-  //         dispatch(setCart(cartItems));
-  //       } catch (error) {
-  //         console.error('Error fetching cart:', error);
-  //         if (error.response?.status === 401) {
-  //           localStorage.removeItem('token');
-  //           window.location.href = '/login';
-  //         }
-  //       }
-  //     };
-  
-  //       fetchCart();
-  //   }, [dispatch]);
-  // }
-
   return (
     <Router>
       <Routes>
-
         <Route path="/" element={<UserProtectionLayer><Home /></UserProtectionLayer>} />
         <Route path="/category/:categoryId" element={<CategoryProducts />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path='/profile/details' element={<UserDetails />} />
         <Route path="/profile/address" element={<AddressManagement />} />
-        <Route path="/shop" element={<Shop   />} />
+        <Route path="/shop" element={<Shop />} />
         <Route
           path="/login"
           element={
@@ -97,27 +64,25 @@ function App() {
             <OTPVerification />
           }
         />
-  <Route path="/forgot-password" element={<ForgotPasswordForm />} />
-  <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
-  <Route path="/profile/change-password" element={<ChangePassword />} />
-  <Route path="/cart" element={<CartPage />} />
-  <Route path="/wishlist" element={<Wishlist />} />
-  <Route path="/checkout" element={<CheckoutPage />} />
-  <Route path="/profile/orders" element={<OrderHistory />} />
-  <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
-  <Route path="/profile/wallet" element={<WalletView />} />
-
+        <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
+        <Route path="/profile/change-password" element={<ChangePassword />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/profile/orders" element={<OrderHistory />} />
+        <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
+        <Route path="/profile/wallet" element={<WalletView />} />
 
         <Route
           path="/admin-login"
           element={
             <AdminLogin />
-     
           }
         />
         <Route path="/admin-dashboard" element={<AdminProtectionLayer><AdminDashboard /></AdminProtectionLayer>}
         >
-          <Route index element={<div>Welcome to Admin Dashboard</div>} />
+          <Route index element={<Dashboard />} />
           <Route path="users" element={<AdminProtectionLayer><UserListing /></AdminProtectionLayer>} />
           <Route path="products" element={<AdminProtectionLayer ><Product /></AdminProtectionLayer>} />
           <Route path="categories" element={<Category />} />
@@ -126,10 +91,11 @@ function App() {
           <Route path="orders" element={<OrderManagement />} />
           <Route path="coupons" element={<AdminCoupon />} />
           <Route path="offers" element={<OfferList />} />
-      <Route path="offers/create" element={<CreateOffer />} />
-      <Route path="offers/edit/:id" element={<EditOffer />} />
+          <Route path="offers/create" element={<CreateOffer />} />
+          <Route path="offers/edit/:id" element={<EditOffer />} />
+          <Route path="sales-report" element={<SalesReport />} />
+      
         </Route>
-
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../utils/axiosInstance';
 import Header from '../../components/user/Header';
@@ -12,13 +11,22 @@ const WalletView = () => {
     const [error, setError] = useState(null);
     const [showAddMoneyModal, setShowAddMoneyModal] = useState(false);
     const [amount, setAmount] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     useEffect(() => {
         const fetchWalletData = async () => {
             try {
                 const response = await axiosInstance.get('/wallet');
                 if (response.data.success) {
-                    setWalletData(response.data.wallet);
+                    // Sort transactions by date (newest first)
+                    const sortedTransactions = response.data.wallet.transactions.sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                    );
+                    setWalletData({
+                        ...response.data.wallet,
+                        transactions: sortedTransactions
+                    });
                 }
             } catch (error) {
                 setError(error.response?.data?.message || 'Error fetching wallet data');
@@ -29,6 +37,16 @@ const WalletView = () => {
 
         fetchWalletData();
     }, []);
+
+    // Get current transactions for the page
+    const indexOfLastTransaction = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstTransaction = indexOfLastTransaction - ITEMS_PER_PAGE;
+    const currentTransactions = walletData?.transactions?.slice(indexOfFirstTransaction, indexOfLastTransaction) || [];
+    const totalPages = walletData?.transactions ? Math.ceil(walletData.transactions.length / ITEMS_PER_PAGE) : 0;
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
 
     const getTransactionIcon = (type) => {
         return type === 'credit' ?
@@ -45,6 +63,7 @@ const WalletView = () => {
             minute: '2-digit'
         });
     };
+
     const handleAddMoney = async () => {
         try {
             const amountValue = parseFloat(amount);
@@ -104,7 +123,6 @@ const WalletView = () => {
         }
     };
 
-
     if (loading) {
         return (
             <>
@@ -133,135 +151,180 @@ const WalletView = () => {
         );
     }
 
-   return (
-  <>
-    <Header />
-    <div className="container py-5">
-      {/* Wallet Balance Card */}
-      <div className="row mb-4">
-        <div className="col-md-6 mx-auto">
-          <div className="card wallet-balance-card">
-            <div className="card-body text-center">
-              <h5 className="card-title mb-3">
-                <i className="fas fa-wallet me-2"></i>
-                Wallet Balance
-              </h5>
-              <h2 className="balance mb-3">₹{walletData?.balance || 0}</h2>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowAddMoneyModal(true)}
-              >
-                Add Money
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    return (
+        <>
+            <Header />
+            <div className="container py-5">
+                {/* Wallet Balance Card */}
+                <div className="row mb-4">
+                    <div className="col-md-6 mx-auto">
+                        <div className="card wallet-balance-card">
+                            <div className="card-body text-center">
+                                <h5 className="card-title mb-3">
+                                    <i className="fas fa-wallet me-2"></i>
+                                    Wallet Balance
+                                </h5>
+                                <h2 className="balance mb-3">₹{walletData?.balance || 0}</h2>
+                                <button 
+                                    className="btn btn-primary"
+                                    onClick={() => setShowAddMoneyModal(true)}
+                                >
+                                    Add Money
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-      {/* Transaction History */}
-      <div className="card">
-        <div className="card-header">
-          <h5 className="mb-0">Transaction History</h5>
-        </div>
-        <div className="card-body">
-          {loading ? (
-            <div className="text-center">
-              <div className="spinner-border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          ) : walletData?.transactions?.length > 0 ? (
-            <div className="table-responsive">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walletData.transactions.map((transaction) => (
-                    <tr key={transaction._id}>
-                      <td>{new Date(transaction.createdAt).toLocaleDateString()}</td>
-                      <td>{transaction.description}</td>
-                      <td>
-                        <span className={`badge bg-${transaction.type === 'credit' ? 'success' : 'danger'}`}>
-                          {transaction.type}
-                        </span>
-                      </td>
-                      <td>₹{transaction.amount}</td>
-                      <td>₹{transaction.balance}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center">No transactions found</p>
-          )}
-        </div>
-      </div>
+                {/* Transaction History */}
+                <div className="card">
+                    <div className="card-header">
+                        <h5 className="mb-0">Transaction History</h5>
+                    </div>
+                    <div className="card-body">
+                        {loading ? (
+                            <div className="text-center">
+                                <div className="spinner-border" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        ) : walletData?.transactions?.length > 0 ? (
+                            <>
+                                <div className="table-responsive">
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Description</th>
+                                                <th>Type</th>
+                                                <th>Amount</th>
+                                                <th>Balance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {currentTransactions.map((transaction) => (
+                                                <tr key={transaction._id}>
+                                                    <td>{new Date(transaction.createdAt).toLocaleDateString()}</td>
+                                                    <td>{transaction.description}</td>
+                                                    <td>
+                                                        <span className={`badge bg-${transaction.type === 'credit' ? 'success' : 'danger'}`}>
+                                                            {transaction.type}
+                                                        </span>
+                                                    </td>
+                                                    <td>₹{transaction.amount}</td>
+                                                    <td>₹{transaction.balance}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-      {/* Add Money Modal */}
-      <div className={`modal fade ${showAddMoneyModal ? 'show' : ''}`}
-           style={{ display: showAddMoneyModal ? 'block' : 'none' }}
-           tabIndex="-1">
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Add Money to Wallet</h5>
-              <button 
-                type="button" 
-                className="btn-close"
-                onClick={() => {
-                  setShowAddMoneyModal(false);
-                  setAmount('');
-                }}
-              ></button>
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="d-flex justify-content-center mt-4">
+                                        <nav aria-label="Transaction history pagination">
+                                            <ul className="pagination">
+                                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                    <button
+                                                        className="page-link"
+                                                        onClick={() => handlePageChange(currentPage - 1)}
+                                                        disabled={currentPage === 1}
+                                                    >
+                                                        Previous
+                                                    </button>
+                                                </li>
+                                                {[...Array(totalPages)].map((_, index) => (
+                                                    <li
+                                                        key={index + 1}
+                                                        className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
+                                                    >
+                                                        <button
+                                                            className="page-link"
+                                                            onClick={() => handlePageChange(index + 1)}
+                                                        >
+                                                            {index + 1}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                    <button
+                                                        className="page-link"
+                                                        onClick={() => handlePageChange(currentPage + 1)}
+                                                        disabled={currentPage === totalPages}
+                                                    >
+                                                        Next
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center">
+                                <p className="mb-0">No transactions found</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Add Money Modal */}
+                <div className={`modal fade ${showAddMoneyModal ? 'show' : ''}`}
+                     style={{ display: showAddMoneyModal ? 'block' : 'none' }}
+                     tabIndex="-1">
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Add Money to Wallet</h5>
+                                <button 
+                                    type="button" 
+                                    className="btn-close"
+                                    onClick={() => {
+                                        setShowAddMoneyModal(false);
+                                        setAmount('');
+                                    }}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Enter Amount (₹):</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        min="1"
+                                        placeholder="Enter amount"
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button 
+                                    type="button" 
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setShowAddMoneyModal(false);
+                                        setAmount('');
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-primary"
+                                    onClick={handleAddMoney}
+                                >
+                                    Add Money
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {showAddMoneyModal && <div className="modal-backdrop fade show"></div>}
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Enter Amount (₹):</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min="1"
-                  placeholder="Enter amount"
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowAddMoneyModal(false);
-                  setAmount('');
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-primary"
-                onClick={handleAddMoney}
-              >
-                Add Money
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      {showAddMoneyModal && <div className="modal-backdrop fade show"></div>}
-    </div>
-    <Footer />
-  </>
-);
+            <Footer />
+        </>
+    );
 };
 
 export default WalletView;

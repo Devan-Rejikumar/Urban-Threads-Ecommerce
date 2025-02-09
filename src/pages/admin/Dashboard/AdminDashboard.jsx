@@ -2,7 +2,7 @@ import React, { Fragment, useState } from "react"
 import { Link, Outlet, useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
 import { adminLogout as logout } from "../../../redux/slices/adminAuthSlice"
-import { FaProductHunt, FaListUl, FaUsers, FaShoppingCart, FaTicketAlt, FaGift, FaMoon, FaSun } from "react-icons/fa"
+import { FaProductHunt, FaListUl, FaUsers, FaShoppingCart, FaTicketAlt, FaGift, FaMoon, FaSun, FaChartLine, FaHome } from "react-icons/fa"
 import axios from "axios"
 import './AdminDashboard.css'
 
@@ -53,8 +53,13 @@ const AdminDashboard = () => {
         <div className="sidebar">
           <nav>
             <div className="nav-section">
-              <h6 className="nav-title">General</h6>
+              {/* <h6 className="nav-title">General</h6> */}
               <ul className="nav-items">
+                <li>
+                  <Link to="/admin-dashboard" className="nav-link">
+                    <FaHome /> Dashboard
+                  </Link>
+                </li>
                 <li>
                   <Link to="products" className="nav-link">
                     <FaProductHunt /> Products
@@ -83,6 +88,11 @@ const AdminDashboard = () => {
                 <li>
                   <Link to="offers" className="nav-link">
                     <FaGift /> Offers
+                  </Link>
+                </li>
+                <li>
+                  <Link to="sales-report" className="nav-link">
+                    <FaChartLine /> Sales Report
                   </Link>
                 </li>
               </ul>

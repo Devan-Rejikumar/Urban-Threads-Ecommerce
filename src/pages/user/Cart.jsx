@@ -42,7 +42,7 @@ const Cart = ({ show, onHide }) => {
     }
   }, [dispatch, show]);
 
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const cartTotal = cartItems.reduce((total, item) => total + (Math.round(item.price * item.quantity)), 0);
 
   const handleQuantityChange = async (productId, selectedSize, newQty, stock, maxPerPerson) => {
     if (newQty >= 1 && newQty <= stock && newQty <= maxPerPerson) {
@@ -126,7 +126,7 @@ const Cart = ({ show, onHide }) => {
                             </button>
                           </div>
                           <p className="text-muted small mb-1">Size: {item.selectedSize}</p>
-                          <p className="fw-bold mb-2">₹{item.price}</p>
+                          <p className="fw-bold mb-2">₹{Math.round(item.price)}</p>
 
                           <div className="d-flex align-items-center">
                             <div className="input-group input-group-sm" style={{ width: '120px' }}>
@@ -180,7 +180,7 @@ const Cart = ({ show, onHide }) => {
                 <div className="w-100">
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted">Subtotal</span>
-                    <span>₹{cartTotal}</span>
+                    <span>₹{Math.round(cartTotal)}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted">Shipping</span>
@@ -188,7 +188,7 @@ const Cart = ({ show, onHide }) => {
                   </div>
                   <div className="d-flex justify-content-between fw-bold">
                     <span>Total</span>
-                    <span>₹{cartTotal}</span>
+                    <span>₹{Math.round(cartTotal)}</span>
                   </div>
                 </div>
                 <div className="d-flex w-100 gap-2">

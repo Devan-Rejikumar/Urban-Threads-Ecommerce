@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import './UserListing.css';
 import AdminBreadcrumbs from '../UserManagement/AdminBreadcrumbs';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const UserListing = () => {
   const [users, setUsers] = useState([]);
@@ -69,26 +70,63 @@ const UserListing = () => {
   }, [searchTerm, users]);
 
   const handleBlockUnblock = async (id, action) => {
-    const confirmAction = window.confirm(`Are you sure you want to ${action} this user?`);
-    if (!confirmAction) return;
-  
     try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to ${action} this user?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: action === 'block' ? '#d33' : '#3085d6',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: action === 'block' ? 'Yes, block user' : 'Yes, unblock user',
+        cancelButtonText: 'Cancel'
+      });
 
-      await axios.put(`http://localhost:5000/api/admin/users/${id}/${action}`);
-  
-      setUsers((prev) =>
-        prev.map((user) =>
-          user._id === id ? { ...user, status: action === 'block' ? 'blocked' : 'active' } : user
-        )
+      if (!result.isConfirmed) return;
+
+      const response = await axios.put(
+        `http://localhost:5000/api/admin/users/${id}/${action}`,
+        {},
+        { withCredentials: true }
       );
+
+      if (response.status === 200) {
+        setUsers((prev) =>
+          prev.map((user) =>
+            user._id === id ? { ...user, status: action === 'block' ? 'blocked' : 'active' } : user
+          )
+        );
+
+        // Show success message
+        await Swal.fire({
+          title: 'Success!',
+          text: `User has been ${action}ed successfully`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
     } catch (error) {
       console.error(`Error ${action}ing user:`, error);
-      if (error.response?.status === 401) {
-     
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        await Swal.fire({
+          title: 'Session Expired',
+          text: 'Your session has expired. Please login again.',
+          icon: 'warning',
+          confirmButtonColor: '#3085d6'
+        });
         localStorage.removeItem('adminData');
         navigate('/admin-login');
       } else {
-        setError(`Error ${action}ing user: ${error.message}`);
+        // Show error message for other types of errors
+        await Swal.fire({
+          title: 'Error!',
+          text: `Failed to ${action} user: ${error.response?.data?.message || error.message}`,
+          icon: 'error',
+          confirmButtonColor: '#d33'
+        });
       }
     }
   };

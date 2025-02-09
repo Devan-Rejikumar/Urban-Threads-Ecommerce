@@ -385,13 +385,6 @@ const Home = () => {
                     (cat) => cat._id === product.category?._id
                   );
                   
-                  // Debug log for offer data
-                  console.log(`Product ${product.name} offer data:`, {
-                    productOffer: product.currentOffer,
-                    categoryOffer: productCategory?.currentOffer,
-                    originalPrice: product.originalPrice
-                  });
-
                   return (
                     <ProductCard
                       key={product._id}

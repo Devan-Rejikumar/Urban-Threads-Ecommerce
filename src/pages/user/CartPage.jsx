@@ -40,6 +40,7 @@ const CartPage = () => {
   }, [dispatch]);
 
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const shippingCharges = cartTotal >= 1200 ? 0 : 100;
 
   const handleQuantityChange = async (productId, selectedSize, newQty, stock, maxPerPerson) => {
     if (newQty >= 1 && newQty <= stock && newQty <= maxPerPerson) {
@@ -157,19 +158,18 @@ const CartPage = () => {
             <div className="col-lg-4">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-4">Order Summary</h5>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Subtotal</span>
-                    <span>₹{cartTotal}</span>
+                  <h5 className="card-title mb-4">Cart Summary</h5>
+                  <div className="d-flex justify-content-between mb-3">
+                    <span>Subtotal:</span>
+                    <strong>₹{Math.round(cartTotal)}</strong>
                   </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Shipping</span>
-                    <span>FREE</span>
+                  <div className="d-flex justify-content-between mb-3">
+                    <span>Shipping Charges {cartTotal >= 1200 && <span className="text-success">(Free)</span>}:</span>
+                    <strong>₹{shippingCharges}</strong>
                   </div>
-                  <hr />
-                  <div className="d-flex justify-content-between fw-bold mb-4">
-                    <span>Total</span>
-                    <span>₹{cartTotal}</span>
+                  <div className="d-flex justify-content-between border-top pt-3">
+                    <span className="h5 mb-0">Total:</span>
+                    <strong className="h5 mb-0">₹{Math.round(cartTotal + shippingCharges)}</strong>
                   </div>
                   <button
                     className="btn btn-dark w-100"

@@ -9,7 +9,7 @@ import AddressModal from './AddressForm';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
-import { loadScript } from '../../utils/razorpay';
+import { loadScript } from '../../utils/razorpay.js';
 
 
 const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
@@ -79,6 +79,7 @@ const Checkout = () => {
     const [selectedAddress, setSelectedAddress] = useState(null);
     const cartItems = useSelector(state => state.cart.items);
     const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const shippingCharges = cartTotal >= 1200 ? 0 : 100;
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
@@ -157,140 +158,229 @@ const Checkout = () => {
 
     const initializeRazorpayPayment = async () => {
         try {
-            const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-
-            if (!res) {
-                toast.error('Razorpay SDK failed to load');
-                return;
-            }
-
-            const response = await axiosInstance.post('/payment/create-order', {
-                totalAmount: cartTotal - discountAmount
-            });
-
-            const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: response.data.order.amount,
-                currency: "INR",
-                name: "Urban Threads",
-                description: "Payment for order",
-                order_id: response.data.order.id,
-                handler: async function (response) {
-                    try {
-                        const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature
-                        });
-
-                        if (verifyResponse.data.success) {
-                            const orderPayload = {
-                                addressId: selectedAddress,
-                                paymentMethod: 'online',
-                                items: cartItems.map(item => ({
-                                    productId: item.productId,
-                                    selectedSize: item.selectedSize,
-                                    quantity: item.quantity,
-                                    price: item.price
-                                })),
-                                totalAmount: cartTotal - discountAmount,
-                                razorpayOrderId: response.razorpay_order_id,
-                                razorpayPaymentId: response.razorpay_payment_id
-                            };
-
-                            await handleOrderCompletion(orderPayload);
-                        }
-                    } catch (error) {
-                        toast.error('Payment verification failed');
-                    }
-                },
-                prefill: {
-                    name: "Customer Name",
-                    email: "customer@example.com"
-                },
-                theme: {
-                    color: "#3399cc"
+          const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+      
+          if (!res) {
+            toast.error('Razorpay SDK failed to load');
+            return;
+          }
+      
+          const response = await axiosInstance.post('/payment/create-order', {
+            totalAmount: Math.round(cartTotal - discountAmount + shippingCharges),
+            discountAmount: discountAmount,
+            couponCode: selectedCoupon,
+          });
+      
+          console.log('Razorpay Order Response:', response.data);
+      
+          if (!response.data.success) {
+            toast.error('Failed to create Razorpay order');
+            return;
+          }
+      
+          const addressDetails = addresses.find(addr => addr._id === selectedAddress);
+      
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: response.data.order.amount,
+            currency: 'INR',
+            name: 'Urban Threads',
+            description: 'Payment for order',
+            order_id: response.data.order.id,
+            handler: async function (response) {
+              try {
+                const verifyResponse = await axiosInstance.post('/payment/verify-payment', {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                });
+      
+                if (verifyResponse.data.success) {
+                
+                  const orderPayload = {
+                    addressId: selectedAddress,
+                    paymentMethod: 'online',
+                    items: cartItems.map(item => ({
+                      productId: item.productId,
+                      selectedSize: item.selectedSize,
+                      quantity: item.quantity,
+                      price: item.price
+                    })),
+                    totalAmount: Math.round(cartTotal - discountAmount + shippingCharges),
+                    discountAmount: discountAmount,
+                    couponCode: selectedCoupon,
+                    razorpayOrderId: response.razorpay_order_id,
+                    razorpayPaymentId: response.razorpay_payment_id,
+                    paymentStatus: 'paid' 
+                  };
+      
+                
+                  await handleOrderCompletion(orderPayload);
+                  
+                  toast.success('Payment successful!');
                 }
-            };
-
-            const paymentObject = new window.Razorpay(options);
-            paymentObject.open();
+              } catch (error) {
+                console.error('Payment verification error:', error);
+                
+                
+                const failedOrderPayload = {
+                  addressId: selectedAddress,
+                  paymentMethod: 'online',
+                  items: cartItems.map(item => ({
+                    productId: item.productId,
+                    selectedSize: item.selectedSize,
+                    quantity: item.quantity,
+                    price: item.price
+                  })),
+                  totalAmount: Math.round(cartTotal - discountAmount + shippingCharges),
+                  discountAmount: discountAmount,
+                  couponCode: selectedCoupon,
+                  razorpayOrderId: response.razorpay_order_id,
+                  paymentStatus: 'failed' 
+                };
+      
+             
+                await handleOrderCompletion(failedOrderPayload);
+                
+                toast.error('Payment verification failed');
+              }
+            },
+            modal: {
+              ondismiss: async function () {
+                try {
+             
+                  const cancelledOrderPayload = {
+                    addressId: selectedAddress,
+                    paymentMethod: 'online',
+                    items: cartItems.map(item => ({
+                      productId: item.productId,
+                      selectedSize: item.selectedSize,
+                      quantity: item.quantity,
+                      price: item.price
+                    })),
+                    totalAmount: Math.round(cartTotal - discountAmount + shippingCharges),
+                    discountAmount: discountAmount,
+                    couponCode: selectedCoupon,
+                    razorpayOrderId: response.data.order.id,
+                    paymentStatus: 'failed' 
+                  };
+      
+                
+                  await handleOrderCompletion(cancelledOrderPayload);
+      
+                  await axiosInstance.post('/payment/failed-payment', {
+                    orderId: response.data.order.id,
+                  });
+                } catch (error) {
+                  console.error('Failed payment error:', error);
+                }
+              },
+            },
+            prefill: {
+              name: addressDetails?.firstName,
+              email: '', // Add user email if available
+              contact: addressDetails?.phoneNumber,
+            },
+            theme: {
+              color: '#3399cc',
+            },
+          };
+      
+          console.log('Razorpay Options:', options);
+      
+          const paymentObject = new window.Razorpay(options);
+          paymentObject.open();
         } catch (error) {
-            toast.error('Payment initialization failed');
+          console.error('Payment initialization error:', error);
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            response: error.response?.data,
+          });
+          toast.error('Failed to initialize payment retry');
         }
-    };
+      };
+   
 
     const handlePlaceOrder = async () => {
         try {
-          if (!selectedAddress || !selectedPayment) {
-            toast.error('Please select both address and payment method');
-            return;
-          }
-      
-          const finalAmount = cartTotal - discountAmount;
-      
-          if (selectedPayment === 'wallet' && walletBalance < finalAmount) {
-            toast.error('Insufficient wallet balance');
-            return;
-          }
-      
-          const orderPayload = {
-            addressId: selectedAddress,
-            paymentMethod: selectedPayment,
-            items: cartItems.map(item => ({
-              productId: item.productId,
-              selectedSize: item.selectedSize,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-            totalAmount: finalAmount,
-          };
-      
-          console.log('Order Payload:', orderPayload); // Log the payload
-      
-          if (selectedPayment === 'wallet') {
-            const walletResponse = await axiosInstance.post('/wallet/debit', {
-              amount: finalAmount,
-              description: `Payment for order`,
-            });
-      
-            if (!walletResponse.data.success) {
-              toast.error('Failed to deduct wallet balance');
-              return;
+            if (!selectedAddress || !selectedPayment) {
+                toast.error('Please select both address and payment method');
+                return;
             }
-          }
-      
-          if (selectedPayment === 'online') {
-            await initializeRazorpayPayment();
-            return;
-          }
-      
-          const response = await axiosInstance.post('/orders', orderPayload);
-      
-          if (response.data.success) {
-            dispatch({ type: 'cart/clearCart' });
-            Swal.fire({
-              title: 'Order Placed Successfully!',
-              text: `Your order #${response.data.orderId} has been placed`,
-              icon: 'success',
-              confirmButtonText: 'View Order',
-              showCancelButton: true,
-              cancelButtonText: 'Continue Shopping',
-            }).then((result) => {
-              if (result.isConfirmed) {
-                navigate('/profile/orders');
-              } else {
-                navigate('/shop');
-              }
-            });
-          } else {
-            toast.error('Failed to place order');
-          }
+
+            const finalAmount = Math.round(cartTotal - discountAmount + shippingCharges);
+
+            if (selectedPayment === 'wallet' && walletBalance < finalAmount) {
+                toast.error('Insufficient wallet balance');
+                return;
+            }
+
+            const orderPayload = {
+                addressId: selectedAddress,
+                paymentMethod: selectedPayment,
+                items: cartItems.map(item => ({
+                    productId: item.productId,
+                    selectedSize: item.selectedSize,
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
+                totalAmount: finalAmount,
+                discountAmount: discountAmount,
+                couponCode: selectedCoupon
+
+            };
+
+            console.log('Order Payloadwwwwwwwww:', orderPayload); // Log the payload
+
+            if (selectedPayment === 'wallet') {
+                const walletResponse = await axiosInstance.post('/wallet/debit', {
+                    amount: finalAmount,
+                    description: `Payment for order`,
+                });
+
+                if (!walletResponse.data.success) {
+                    toast.error('Failed to deduct wallet balance');
+                    return;
+                }
+            }
+
+            if (selectedPayment === 'online') {
+                await initializeRazorpayPayment();
+                return;
+            }
+
+            if (selectedPayment === 'cod') {
+                toast.error('Cash on delivery is not available on orders above ₹999');
+                return;
+            }
+
+            const response = await axiosInstance.post('/orders', orderPayload);
+
+            if (response.data.success) {
+                dispatch({ type: 'cart/clearCart' });
+                Swal.fire({
+                    title: 'Order Placed Successfully!',
+                    text: `Your order #${response.data.orderId} has been placed`,
+                    icon: 'success',
+                    confirmButtonText: 'View Order',
+                    showCancelButton: true,
+                    cancelButtonText: 'Continue Shopping',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        navigate('/profile/orders');
+                    } else {
+                        navigate('/shop');
+                    }
+                });
+            } else {
+                toast.error('Failed to place order');
+            }
         } catch (error) {
-          console.error('Order placement failed:', error);
-          toast.error('Failed to place order');
+            console.error('Order placement failed:', error);
+            toast.error('Failed to place order');
         }
-      };
+    };
 
 
 
@@ -353,7 +443,7 @@ const Checkout = () => {
                 }
             });
 
-          
+
             if (response.data && response.data.wallet && typeof response.data.wallet.balance === 'number') {
                 setWalletBalance(response.data.wallet.balance);
             } else {
@@ -365,12 +455,32 @@ const Checkout = () => {
             setWalletBalance(0);
         }
     };
+ 
+
     const handleOrderCompletion = async (orderPayload) => {
         try {
+           
+            if (orderPayload.paymentMethod === 'online') {
+                orderPayload.paymentStatus = orderPayload.razorpayPaymentId ? 'paid' : 'failed';
+            } else {
+               
+                orderPayload.paymentStatus = orderPayload.paymentMethod === 'cod' ? 'pending' : 'paid';
+                orderPayload.orderStatus = 'pending';
+            }
+    
             const response = await axiosInstance.post('/orders', orderPayload);
-
+    
             if (response.data.success) {
                 dispatch({ type: 'cart/clearCart' });
+    
+                // Handle failed payments
+                if (orderPayload.paymentStatus === 'failed') {
+                    navigate('/profile/orders');
+                    toast.error('Payment failed. Please try again from your order history.');
+                    return;
+                }
+    
+                // For successful payments
                 Swal.fire({
                     title: 'Order Placed Successfully!',
                     text: `Your order #${response.data.orderId} has been placed`,
@@ -387,9 +497,12 @@ const Checkout = () => {
                 });
             }
         } catch (error) {
+            console.error('Order completion error:', error);
             toast.error('Failed to complete order');
+            navigate('/cart');
         }
     };
+    
 
     return (
         <>
@@ -495,7 +608,9 @@ const Checkout = () => {
                                             <p className="text-muted small mb-0">
                                                 Size: {item.selectedSize} | Qty: {item.quantity}
                                             </p>
-                                            <p className="fw-bold">₹{item.price * item.quantity}</p>
+                                            <p className="fw-bold">₹{Math.round(item.price * item.quantity)
+
+                                            }</p>
                                         </div>
                                     </div>
                                 ))}
@@ -503,7 +618,7 @@ const Checkout = () => {
                                 <hr />
                                 <div className="d-flex justify-content-between mb-2">
                                     <span>Subtotal</span>
-                                    <strong>₹{cartTotal}</strong>
+                                    <strong>₹{Math.round(cartTotal)}</strong>
                                 </div>
                                 {discountAmount > 0 && (
                                     <div className="d-flex justify-content-between align-items-center mb-2 text-success">
@@ -520,9 +635,13 @@ const Checkout = () => {
                                         </div>
                                     </div>
                                 )}
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span>Shipping Charges {cartTotal >= 1200 && <span className="text-success">(Free)</span>}</span>
+                                    <strong>₹{shippingCharges}</strong>
+                                </div>
                                 <div className="d-flex justify-content-between border-top pt-2">
                                     <span className="fw-bold">Final Total</span>
-                                    <strong>₹{cartTotal - discountAmount}</strong>
+                                    <strong>₹{Math.round(cartTotal - discountAmount + shippingCharges)}</strong>
                                 </div>
                                 <div className="card mb-4">
                                     <div className="card-header">

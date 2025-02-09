@@ -1,47 +1,47 @@
 /* WalletView.css */
 .wallet-balance-card {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    color: white;
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .balance-amount {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin: 0;
-  }
-  
-  .transaction-type {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-transform: capitalize;
-  }
-  
-  .transaction-type.credit {
-    color: #198754;
-  }
-  
-  .transaction-type.debit {
-    color: #dc3545;
-  }
-  
-  .amount-credit {
-    color: #198754;
-    font-weight: 500;
-  }
-  
-  .amount-debit {
-    color: #dc3545;
-    font-weight: 500;
-  }
-  
-  table td {
-    vertical-align: middle;
-  }
-  
-  .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-  }
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.transaction-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: capitalize;
+}
+
+.transaction-type.credit {
+  color: #198754;
+}
+
+.transaction-type.debit {
+  color: #dc3545;
+}
+
+.amount-credit {
+  color: #198754;
+  font-weight: 500;
+}
+
+.amount-debit {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+table td {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}

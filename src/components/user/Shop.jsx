@@ -23,7 +23,9 @@ const Shop = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const wishlistItems = useSelector(state => state.wishlist.items);
-  const [wishlistState, setWishlistState] = useState({});  // Local state for heart colors
+  const [wishlistState, setWishlistState] = useState({}); 
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 9;
 
   useEffect(() => {
     fetchCategories();
@@ -31,7 +33,7 @@ const Shop = () => {
   }, []);
 
   useEffect(() => {
-    // Initialize wishlist state based on Redux wishlist
+
     const initialWishlistState = {};
     wishlistItems.forEach(item => {
       initialWishlistState[item._id] = true;
@@ -82,13 +84,13 @@ const Shop = () => {
       const isInWishlist = wishlistState[product._id];
       
       if (isInWishlist) {
-        // Remove from wishlist
+   
         await axiosInstance.delete(`/wishlist/remove/${product._id}`);
         setWishlistState(prev => ({ ...prev, [product._id]: false }));
         dispatch(removeFromWishlist(product._id));
         toast.success('Removed from wishlist');
       } else {
-        // Add to wishlist
+      
         const response = await axiosInstance.post('/wishlist/add', { 
           productId: product._id 
         });
@@ -116,7 +118,6 @@ const Shop = () => {
     navigate(`/product/${productId}`);
   };
 
-  // Filter and sort products (unchanged)
   const filteredProducts = products.filter(product => {
     const categoryMatch = selectedCategories.length === 0 ||
       selectedCategories.includes(product.category._id);
@@ -142,6 +143,12 @@ const Shop = () => {
         return 0;
     }
   });
+
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
@@ -220,46 +227,67 @@ const Shop = () => {
                 </div>
               </div>
             ) : (
-              <div className="row g-4">
-                {sortedProducts.map((product) => (
-                  <div
-                    key={product._id}
-                    className="col-md-6 col-lg-4"
-                    onClick={() => handleProductClick(product._id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="product-card">
-                      <div className="product-image-container">
-                        <img
-                          src={product.images[0] || "/placeholder.svg"}
-                          alt={product.name}
-                          className="product-image"
-                        />
-                        <button
-                          className="wishlist-btn"
-                          onClick={(e) => handleWishlistClick(e, product)}
-                          style={{ color: wishlistState[product._id] ? 'red' : 'inherit' }}
-                        >
-                          <Heart
-                            size={20}
-                            fill={wishlistState[product._id] ? "red" : "none"}
-                            color={wishlistState[product._id] ? "red" : "currentColor"}
+              <>
+                <div className="row g-4">
+                  {currentProducts.map((product) => (
+                    <div
+                      key={product._id}
+                      className="col-md-6 col-lg-4"
+                      onClick={() => handleProductClick(product._id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="product-card">
+                        <div className="product-image-container">
+                          <img
+                            src={product.images[0] || "/placeholder.svg"}
+                            alt={product.name}
+                            className="product-image"
                           />
-                        </button>
-                      </div>
-                      <div className="product-info">
-                        <h3 className="product-title">{product.name}</h3>
-                        <div className="product-price">
-                          <span className="sale-price">${product.salePrice}</span>
-                          {product.originalPrice > product.salePrice && (
-                            <span className="original-price">${product.originalPrice}</span>
-                          )}
+                          <button
+                            className="wishlist-btn"
+                            onClick={(e) => handleWishlistClick(e, product)}
+                            style={{ color: wishlistState[product._id] ? 'red' : 'inherit' }}
+                          >
+                            <Heart
+                              size={20}
+                              fill={wishlistState[product._id] ? "red" : "none"}
+                              color={wishlistState[product._id] ? "red" : "currentColor"}
+                            />
+                          </button>
+                        </div>
+                        <div className="product-info">
+                          <h3 className="product-title">{product.name}</h3>
+                          <div className="product-price">
+                            <span className="sale-price">₹{product.salePrice}</span>
+                            {product.originalPrice > product.salePrice && (
+                              <span className="original-price">${product.originalPrice}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                <nav className="d-flex justify-content-center mt-4">
+                  <ul className="pagination">
+                    {Array.from({ length: Math.ceil(sortedProducts.length / productsPerPage) }).map((_, index) => (
+                      <li 
+                        key={index} 
+                        className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
+                      >
+                        <button 
+                          onClick={() => paginate(index + 1)} 
+                          className="page-link"
+                        >
+                          {index + 1}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              </>
             )}
           </div>
         </div>
