@@ -87,7 +87,7 @@ const Product = () => {
       images: product.images || [null, null, null],
       variants: product.variants.map(v => ({
         size: v.size || 'M',
-        color: v.color || '#000000',
+        color: v.color || '#000000', 
         stock: v.stock || 0
       })),
       isListed: product.isListed
@@ -126,26 +126,26 @@ const Product = () => {
   };
 
   const validateImage = (dataUrl) => {
-    // Check if it's a valid data URL
-    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-      throw new Error('Invalid image format. Please upload a valid image.');
-    }
+   
+    // if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+    //   throw new Error('Invalid image format. Please upload a valid image.');
+    // }
 
-    // Check file size (max 5MB)
-    const base64String = dataUrl.split(',')[1];
-    const fileSize = (base64String.length * 3) / 4; // Approximate size in bytes
-    if (fileSize > 5 * 1024 * 1024) {
-      throw new Error('Image size must be less than 5MB');
-    }
+    // // Check file size (max 5MB)
+    // const base64String = dataUrl.split(',')[1];
+    // const fileSize = (base64String.length * 3) / 4; // Approximate size in bytes
+    // if (fileSize > 5 * 1024 * 1024) {
+    //   throw new Error('Image size must be less than 5MB');
+    // }
 
     return true;
   };
 
   const handleImageUpload = async (e, index) => {
     const file = e.target.files[0];
-    
+
     try {
-      // Validate file type
+   
       if (!file.type.startsWith('image/')) {
         throw new Error('Please upload an image file');
       }
@@ -155,8 +155,8 @@ const Product = () => {
         try {
           const dataUrl = event.target.result;
           validateImage(dataUrl);
-          
-          // Instead of directly setting the image, set it to the cropper
+
+     
           setImageSrc(dataUrl);
           setSelectedImageIndex(index);
         } catch (error) {
@@ -215,8 +215,7 @@ const Product = () => {
       }
 
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
-      
-      // Update the formData with the cropped image
+
       const updatedImages = [...formData.images];
       updatedImages[selectedImageIndex] = croppedImage;
       setFormData(prev => ({
@@ -224,7 +223,7 @@ const Product = () => {
         images: updatedImages
       }));
 
-      // Reset cropping state
+     
       setImageSrc(null);
       setSelectedImageIndex(null);
       setCroppedAreaPixels(null);
@@ -263,8 +262,14 @@ const Product = () => {
     }));
   };
 
+
+
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.variants];
+    if (field === 'color') {
+      const colorOption = colorOptions.find(c => c.name === value);
+      value = colorOption ? colorOption.hex : value;
+    }
     updatedVariants[index][field] = field === 'stock' ? Number(value) : value;
     setFormData(prev => ({
       ...prev,
@@ -272,102 +277,99 @@ const Product = () => {
     }));
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submission started');
-
+    
     try {
-      // Validate form data
       if (!formData) {
         throw new Error('Form data is missing');
       }
-
-      // Ensure variants exists with default value
-      const variants = Array.isArray(formData.variants) ? formData.variants : [{ size: 'M', color: '#000000', stock: 0 }];
-      
-      // Process and validate images
+  
+      const variants = Array.isArray(formData.variants) 
+        ? formData.variants 
+        : [{ size: 'M', color: '#000000', stock: 0 }];
+  
+      // Filter out null/invalid images and validate the remaining ones
       const images = [];
       if (Array.isArray(formData.images)) {
         for (let i = 0; i < formData.images.length; i++) {
           const image = formData.images[i];
-          if (image && typeof image === 'string') {
-            try {
-              validateImage(image);
+          try {
+            if (image && validateImage(image)) {
               images.push(image);
-            } catch (error) {
-              throw new Error(`Image ${i + 1}: ${error.message}`);
             }
+          } catch (error) {
+            throw new Error(`Image ${i + 1}: ${error.message}`);
           }
         }
       }
-      
-      // Validate required fields
-      if (!formData.name) throw new Error('Product name is required');
+  
+
+      if (images.length === 0) {
+        throw new Error('At least one valid image is required');
+      }
+  
+     
+      if (!formData.name.trim()) throw new Error('Product name is required');
       if (!formData.category) throw new Error('Category is required');
       if (!formData.originalPrice) throw new Error('Original price is required');
-      if (images.length === 0) throw new Error('At least one image is required');
-
+  
       const productData = {
-        name: formData.name || '',
-        category: formData.category || '',
-        description: formData.description || '',
-        originalPrice: formData.originalPrice || '',
-        salePrice: formData.salePrice || '',
-        isListed: formData.isListed === undefined ? true : formData.isListed,
-        variants: variants.map(variant => ({
-          size: String(variant?.size || 'M'),
-          color: String(variant?.color || '#000000'),
-          stock: Number(variant?.stock || 0)
-        })),
-        images: images
-      };
+      name: formData.name.trim(),
+      category: formData.category,
+      description: formData.description || '',
+      originalPrice: Number(formData.originalPrice),
+      salePrice: formData.salePrice ? Number(formData.salePrice) : null,
+      isListed: Boolean(formData.isListed),
+      variants: formData.variants.map(variant => ({
+        size: String(variant.size),
+        color: String(variant.color),
+        stock: Number(variant.stock)
+      })),
+      images: images
+    };
 
-      // Log data for debugging
-      console.log('Product data:', productData);
+    const url = isEditing
+      ? `http://localhost:5000/api/products/${editingProductId}`
+      : 'http://localhost:5000/api/products';
 
-      const url = isEditing 
-        ? `http://localhost:5000/api/products/${editingProductId}`
-        : 'http://localhost:5000/api/products';
+  
+    const response = await axios({
+      method: isEditing ? 'put' : 'post',
+      url: url,
+      data: JSON.stringify(productData), 
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      withCredentials: true,
+      transformRequest: [(data) => data] 
+    });
 
-      const response = await axios({
-        method: isEditing ? 'put' : 'post',
-        url: url,
-        data: productData,
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      });
-
-      toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
-      setShowCreateProductsDialog(false);
-      setFormData(initialFormData);
-      setIsEditing(false);
-      setEditingProductId(null);
-      fetchProducts();
-    } catch (error) {
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
-      let errorMessage = error.message;
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-      
-      toast.error(errorMessage);
-    }
-  };
+    toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
+    setShowCreateProductsDialog(false);
+    setFormData(initialFormData);
+    setIsEditing(false);
+    setEditingProductId(null);
+    fetchProducts();
+  } catch (error) {
+    console.error('Server error response:', error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving the product.';
+    toast.error(errorMessage);
+  }
+};
 
   const resetForm = () => {
     setFormData(initialFormData);
     setIsEditing(false);
     setEditingProductId(null);
     setShowCreateProductsDialog(false);
+  };
+
+  const getColorName = (hexValue) => {
+    const colorOption = colorOptions.find(c => c.hex === hexValue);
+    return colorOption ? colorOption.name : hexValue;
   };
 
   return (
@@ -447,22 +449,22 @@ const Product = () => {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Category</label>
-                    <select
-                      className="form-select"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((cat) => (
-                        <option key={cat._id} value={cat._id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+  <label className="form-label">Category</label>
+  <select
+    className="form-select"
+    name="category"
+    value={formData.category}
+    onChange={handleInputChange}
+    required
+  >
+    <option value="">Select Category</option>
+    {categories.map((cat) => (
+      <option key={cat._id} value={cat._id}>
+        {cat.name}
+      </option>
+    ))}
+  </select>
+</div>
 
                   <div className="mb-3">
                     <label className="form-label">Description</label>
@@ -641,7 +643,7 @@ const Product = () => {
                             <div className="col">
                               <select
                                 className="form-select"
-                                value={variant.color}
+                                value={getColorName(variant.color)}
                                 onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
                               >
                                 {colorOptions.map(color => (

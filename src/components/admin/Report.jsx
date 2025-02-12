@@ -38,6 +38,52 @@ const SalesReport = () => {
         const today = new Date();
         return today.toISOString().split('T')[0];
     });
+    const [maxDate, setMaxDate] = useState(() => {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    });
+
+    useEffect(() => {
+        const updateMaxDate = () => {
+            const today = new Date();
+            setMaxDate(today.toISOString().split('T')[0]);
+        };
+
+
+        updateMaxDate();
+
+
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const timeUntilMidnight = tomorrow - now;
+
+        const midnightTimer = setTimeout(() => {
+            updateMaxDate();
+
+            setInterval(updateMaxDate, 24 * 60 * 60 * 1000);
+        }, timeUntilMidnight);
+
+        return () => {
+            clearTimeout(midnightTimer);
+        };
+    }, []);
+
+    const handleCustomDateChange = (type, value) => {
+        setCustomRange(true);
+        if (type === 'start') {
+            setStartDate(value);
+
+            if (endDate < value) {
+                setEndDate(value);
+            }
+
+            if (value >= startDate) {
+                setEndDate(value);
+            }
+        }
+    };
+
+
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -53,7 +99,9 @@ const SalesReport = () => {
             label: 'All Orders',
             getRange: () => {
                 const today = new Date();
-                const pastDate = new Date(2020, 0, 1); 
+                today.setHours(23, 59, 59, 999);
+                const pastDate = new Date(2020, 0, 1);
+                pastDate.setHours(0, 0, 0, 0);
                 return {
                     start: pastDate.toISOString().split('T')[0],
                     end: today.toISOString().split('T')[0]
@@ -64,10 +112,12 @@ const SalesReport = () => {
             label: 'Today',
             getRange: () => {
                 const today = new Date();
-                const dateStr = today.toISOString().split('T')[0];
+                today.setHours(23, 59, 59, 999);
+                const startOfDay = new Date(today);
+                startOfDay.setHours(0, 0, 0, 0);
                 return {
-                    start: dateStr,
-                    end: dateStr
+                    start: startOfDay.toISOString().split('T')[0],
+                    end: today.toISOString().split('T')[0]
                 };
             }
         },
@@ -77,10 +127,12 @@ const SalesReport = () => {
                 const today = new Date();
                 const yesterday = new Date(today);
                 yesterday.setDate(yesterday.getDate() - 1);
-                const dateStr = yesterday.toISOString().split('T')[0];
+                yesterday.setHours(23, 59, 59, 999);
+                const startOfYesterday = new Date(yesterday);
+                startOfYesterday.setHours(0, 0, 0, 0);
                 return {
-                    start: dateStr,
-                    end: dateStr
+                    start: startOfYesterday.toISOString().split('T')[0],
+                    end: yesterday.toISOString().split('T')[0]
                 };
             }
         },
@@ -88,8 +140,10 @@ const SalesReport = () => {
             label: 'Last 7 Days',
             getRange: () => {
                 const today = new Date();
+                today.setHours(23, 59, 59, 999);
                 const lastWeek = new Date(today);
                 lastWeek.setDate(lastWeek.getDate() - 7);
+                lastWeek.setHours(0, 0, 0, 0);
                 return {
                     start: lastWeek.toISOString().split('T')[0],
                     end: today.toISOString().split('T')[0]
@@ -100,8 +154,10 @@ const SalesReport = () => {
             label: 'Last 30 Days',
             getRange: () => {
                 const today = new Date();
+                today.setHours(23, 59, 59, 999);
                 const lastMonth = new Date(today);
                 lastMonth.setDate(lastMonth.getDate() - 30);
+                lastMonth.setHours(0, 0, 0, 0);
                 return {
                     start: lastMonth.toISOString().split('T')[0],
                     end: today.toISOString().split('T')[0]
@@ -112,7 +168,9 @@ const SalesReport = () => {
             label: 'This Month',
             getRange: () => {
                 const today = new Date();
+                today.setHours(23, 59, 59, 999);
                 const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                firstDay.setHours(0, 0, 0, 0);
                 return {
                     start: firstDay.toISOString().split('T')[0],
                     end: today.toISOString().split('T')[0]
@@ -169,23 +227,23 @@ const SalesReport = () => {
 
     useEffect(() => {
         if (startDate && endDate) {
-            generateReport(); // Initial call
+            generateReport();
             const interval = setInterval(generateReport, POLLING_INTERVAL);
             setPollingInterval(interval);
-            
+
             const cleanup = orderEventEmitter.on(ORDER_STATUS_UPDATED, () => {
                 generateReport();
             });
-            
+
             document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
             return () => {
                 if (interval) clearInterval(interval);
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
                 cleanup();
             };
         }
-    }, [startDate, endDate, generateReport]); // Add generateReport to dependencies
+    }, [startDate, endDate, generateReport]);
 
 
     const handleDateRangeSelect = (type) => {
@@ -193,37 +251,49 @@ const SalesReport = () => {
         setReportType(type);
     };
 
-    const handleCustomDateChange = (type, value) => {
-        setCustomRange(true);
-        if (type === 'start') {
-            setStartDate(value);
-        } else {
-            setEndDate(value);
-        }
-    };
 
-    
+
 
     const downloadReport = async (format) => {
         try {
-            const response = await adminAxios.get(`/admin/reports/download-report/${format}`, {
+            setLoading(true);
+            
+            const response = await adminAxios.get(`/admin/reports/download-report/${format === 'pdf' ? 'pdf' : 'xlsx'}`, {
                 params: {
                     startDate,
                     endDate
                 },
                 responseType: 'blob'
             });
-
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+    
+            // Check if the response is empty
+            if (response.data.size === 0) {
+                throw new Error('Empty report received');
+            }
+    
+            // Create download link
+            const blob = new Blob([response.data], {
+                type: format === 'xlsx' 
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'application/pdf'
+            });
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `sales-report-${new Date().toISOString().split('T')[0]}.${format}`);
+            link.setAttribute('download', `sales-report-${startDate}-to-${endDate}.${format}`);
+            
+            // Trigger download
             document.body.appendChild(link);
             link.click();
+            
+            // Cleanup
+            window.URL.revokeObjectURL(url);
             link.remove();
         } catch (error) {
-            setError('Error downloading report. Please try again.');
-            console.error('Error downloading report:', error);
+            console.error('Download error:', error);
+            setError(`Error downloading ${format.toUpperCase()} report. Please try again.`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -234,8 +304,8 @@ const SalesReport = () => {
                     <div className="row align-items-end mb-4">
                         <div className="col-md-6">
                             <div className="dropdown">
-                                <button 
-                                    className="btn btn-light border d-flex align-items-center justify-content-between w-100" 
+                                <button
+                                    className="btn btn-light border d-flex align-items-center justify-content-between w-100"
                                     type="button"
                                     onClick={() => setIsFilterOpen(!isFilterOpen)}
                                 >
@@ -271,6 +341,7 @@ const SalesReport = () => {
                                                 type="date"
                                                 className="form-control form-control-sm"
                                                 value={startDate}
+                                                max={maxDate}
                                                 onChange={(e) => handleCustomDateChange('start', e.target.value)}
                                             />
                                         </div>
@@ -280,6 +351,8 @@ const SalesReport = () => {
                                                 type="date"
                                                 className="form-control form-control-sm"
                                                 value={endDate}
+                                                min={startDate}
+                                                max={maxDate}
                                                 onChange={(e) => handleCustomDateChange('end', e.target.value)}
                                             />
                                         </div>
@@ -308,15 +381,25 @@ const SalesReport = () => {
                                         className="btn btn-outline-secondary"
                                         onClick={() => downloadReport('xlsx')}
                                         title="Download Excel"
+                                        disabled={loading}
                                     >
-                                        <FaFileExcel />
+                                        {loading ? (
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                        ) : (
+                                            <FaFileExcel />
+                                        )}
                                     </button>
                                     <button
                                         className="btn btn-outline-secondary"
                                         onClick={() => downloadReport('pdf')}
                                         title="Download PDF"
+                                        disabled={loading}
                                     >
-                                        <FaFilePdf />
+                                        {loading ? (
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                        ) : (
+                                            <FaFilePdf />
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -362,7 +445,7 @@ const SalesReport = () => {
                                         <div className="card h-100 bg-danger bg-opacity-10 border-danger">
                                             <div className="card-body">
                                                 <h5 className="card-title text-danger">Total Discount</h5>
-                                               
+
                                                 <h3 className="card-text mb-0">₹{(report.totalDiscount || 0).toLocaleString()}</h3>
                                                 <p className="text-muted small mb-0">
                                                     {((report.totalDiscount / report.totalOriginalAmount) * 100).toFixed(1)}% of total
@@ -402,21 +485,21 @@ const SalesReport = () => {
                                                     {report.orders
                                                         .sort((a, b) => new Date(b.date) - new Date(a.date))
                                                         .map(order => (
-                                                        <tr key={order.orderId}>
-                                                            <td className="text-center">{order.orderId}</td>
-                                                            <td className="text-center">{new Date(order.date).toLocaleDateString()}</td>
-                                                            <td className="text-end">₹{(order.originalAmount || 0).toLocaleString()}</td>
-                                                            <td className="text-end">₹{(order.totalDiscount || 0).toLocaleString()}</td>
-                                                            <td className="text-end">₹{(order.revenue || 0).toLocaleString()}</td>
-                                                            <td className="text-center">{order.paymentMethod}</td>
-                                                            <td className="text-center">
-                                                                {console.log(order.status)}
-                                                                <span className={`badge bg-${getStatusColor(order.status)}`}>
-                                                                    {order.status}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                            <tr key={order.orderId}>
+                                                                <td className="text-center">{order.orderId}</td>
+                                                                <td className="text-center">{new Date(order.date).toLocaleDateString()}</td>
+                                                                <td className="text-end">₹{(order.originalAmount || 0).toLocaleString()}</td>
+                                                                <td className="text-end">₹{(order.totalDiscount || 0).toLocaleString()}</td>
+                                                                <td className="text-end">₹{(order.revenue || 0).toLocaleString()}</td>
+                                                                <td className="text-center">{order.paymentMethod}</td>
+                                                                <td className="text-center">
+                                                                    {console.log(order.status)}
+                                                                    <span className={`badge bg-${getStatusColor(order.status)}`}>
+                                                                        {order.status}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
                                                 </tbody>
                                                 <tfoot className="table-light">
                                                     <tr>
@@ -438,8 +521,8 @@ const SalesReport = () => {
                                     <nav aria-label="Page navigation">
                                         <ul className="pagination">
                                             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                                <button 
-                                                    className="page-link" 
+                                                <button
+                                                    className="page-link"
                                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                                     disabled={currentPage === 1}
                                                 >
@@ -447,12 +530,12 @@ const SalesReport = () => {
                                                 </button>
                                             </li>
                                             {[...Array(Math.ceil(totalItems / itemsPerPage))].map((_, index) => (
-                                                <li 
-                                                    key={index + 1} 
+                                                <li
+                                                    key={index + 1}
                                                     className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
                                                 >
-                                                    <button 
-                                                        className="page-link" 
+                                                    <button
+                                                        className="page-link"
                                                         onClick={() => setCurrentPage(index + 1)}
                                                     >
                                                         {index + 1}
@@ -460,8 +543,8 @@ const SalesReport = () => {
                                                 </li>
                                             ))}
                                             <li className={`page-item ${currentPage === Math.ceil(totalItems / itemsPerPage) ? 'disabled' : ''}`}>
-                                                <button 
-                                                    className="page-link" 
+                                                <button
+                                                    className="page-link"
                                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalItems / itemsPerPage)))}
                                                     disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
                                                 >

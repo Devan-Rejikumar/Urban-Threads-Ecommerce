@@ -1,0 +1,12 @@
+.not-found-container {
+    background-color: #f8f9fa;
+  }
+  
+  .not-found-container h1 {
+    font-size: 8rem;
+    color: #343a40;
+  }
+  
+  .not-found-container .text-danger {
+    font-weight: bold;
+  }

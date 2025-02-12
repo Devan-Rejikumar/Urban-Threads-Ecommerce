@@ -35,6 +35,8 @@ import CreateOffer from './components/admin/CreateOffer.jsx';
 import EditOffer from './components/admin/EditOffer.jsx';
 import SalesReport from './components/admin/Report.jsx';
 import Dashboard from './components/admin/Dashboard.jsx';
+import PageNotFound from './pages/user/PageNotFound.jsx'
+import AboutPage from './pages/user/About.jsx';
 
 function App() {
   return (
@@ -73,6 +75,7 @@ function App() {
         <Route path="/profile/orders" element={<OrderHistory />} />
         <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
         <Route path="/profile/wallet" element={<WalletView />} />
+        <Route path='/about' element = {<AboutPage />} />
 
         <Route
           path="/admin-login"
@@ -97,7 +100,8 @@ function App() {
       
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* <Route path="*" element={<Navigate to="/" replace />} /> */}/
+        <Route path='*' element={<PageNotFound />} />
       </Routes>
     </Router>
   );

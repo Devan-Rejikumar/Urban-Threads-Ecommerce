@@ -154,21 +154,13 @@ const AuthForm = () => {
     const [registrationId, setRegistrationId] = useState(null);
     const [verificationEmail, setVerificationEmail] = useState('');
 
-    // useEffect(() => {
-    //     const checkAuthStatus = async () => {
-    //         try {
-    //             const response = await axios.get('http://localhost:5000/api/auth/verify-status');
-    //             if (response.data.isAuthenticated) {
-    //                 dispatch(loginSuccess(response.data.user));
-    //                 navigate('/');
-    //             }
-    //         } catch (error) {
-    //             console.log('User not authenticated');
-    //         }
-    //     };
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            navigate('/', { replace: true });
+        }
+    }, [navigate]);
 
-    //     checkAuthStatus();
-    // }, [dispatch, navigate]);
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
         try {
@@ -195,7 +187,7 @@ const AuthForm = () => {
                     dispatch(loginSuccess(response.data.user));
                     toast.success('Login successful!');
                     console.log("login user data verified nnnnnnnnnnnnnnnnnnnnnn")
-                    navigate('/');
+                    navigate('/',  { replace: true });
                 }
             }
         } catch (error) {
@@ -223,7 +215,7 @@ const AuthForm = () => {
 
                 dispatch(loginSuccess(userData));
                 toast.success(response.data.message || 'Google Sign Up successful!');
-                navigate('/');
+                navigate('/', {replace : true});
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'An error occurred during Google Sign Up.');

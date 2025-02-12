@@ -224,6 +224,7 @@ export default function OrdersPage() {
                                 <option value="delivered">Delivered</option>
                                 <option value="shipped">Shipped</option>
                                 <option value="pending">Pending</option>
+                                <option value='payment_failed'>Failed</option>
                             </select>
                         </div>
                     </div>

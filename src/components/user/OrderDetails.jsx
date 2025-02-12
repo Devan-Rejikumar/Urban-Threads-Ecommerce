@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, RefreshCw, RotateCcw } from 'lucide-react';
+import { ArrowLeft, FileText, Package, RefreshCw, RotateCcw } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 import { loadScript } from '../../utils/razorpay';
 import Header from './Header';
@@ -17,6 +17,7 @@ const OrderDetails = () => {
   const [returnReason, setReturnReason] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [error, setError] = useState(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const { orderId } = useParams();
   const navigate = useNavigate();
 
@@ -54,7 +55,7 @@ const OrderDetails = () => {
         setShowReturnDialog(false);
         setReturnReason('');
         toast.success('Return request submitted successfully');
-        
+
         if (response.data.refundInitiated) {
           toast.info('Refund will be processed after return verification');
         }
@@ -90,6 +91,37 @@ const OrderDetails = () => {
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    if (!order || order.status !== 'delivered') return;
+    setDownloadingInvoice(true);
+
+    try {
+      const response = await axiosInstance.get(`/orders/${orderId}/invoice`, {
+        responseType: 'blob'
+      });
+     
+
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${order.orderId}.pdf`
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Invoice downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast.error('Failed to download invoice. Please try again.');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  }
+
   const handleItemCancel = async () => {
     if (!cancelReason.trim()) {
       toast.error('Please provide a reason for cancellation');
@@ -122,7 +154,7 @@ const OrderDetails = () => {
   const handleRetryPayment = async () => {
     try {
       const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-      
+
       if (!res) {
         toast.error('Razorpay SDK failed to load');
         return;
@@ -164,7 +196,7 @@ const OrderDetails = () => {
           }
         },
         modal: {
-          ondismiss: async function() {
+          ondismiss: async function () {
             try {
               await axiosInstance.post('/payment/failed-payment', {
                 orderId: order.orderId
@@ -360,6 +392,16 @@ const OrderDetails = () => {
         </div>
 
         <div className="d-flex justify-content-end gap-2 mb-3">
+          {order.status === 'delivered' && (
+            <button
+              className="btn btn-primary"
+              onClick={handleDownloadInvoice}
+              disabled={downloadingInvoice}
+            >
+              <FileText size={18} className="me-2" />
+              {downloadingInvoice ? 'Downloading...' : 'Download Invoice'}
+            </button>
+          )}
           {order.status === 'pending' && (
             <button
               className="btn btn-danger"
@@ -399,7 +441,7 @@ const OrderDetails = () => {
                 onClick={handleRetryPayment}
               >
                 <RefreshCw size={18} className="me-2" />
-                Retry Payment 
+                Retry Payment
               </button>
             </div>
           )}
@@ -501,7 +543,7 @@ const OrderDetails = () => {
       </div>
 
       {(showOrderCancelDialog || showReturnDialog) && <div className="modal-backdrop fade show"></div>}
-      
+
       <ToastContainer
         position="top-right"
         autoClose={5000}

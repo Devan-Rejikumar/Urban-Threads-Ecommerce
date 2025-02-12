@@ -10,6 +10,8 @@ const OrderManagement = () => {
     const [filter, setFilter] = useState('All');
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showReturnModal, setShowReturnModal] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredOrders, setFilteredOrders] = useState([]);
 
@@ -61,9 +63,75 @@ const OrderManagement = () => {
         }
     };
 
+    const handleAcceptReturn = async (orderId) => {
+        try {
+            const response = await axios.post(
+                `http://localhost:5000/api/admin/orders/${orderId}/accept-return`,
+                {action : 'accept'},
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                setOrders(orders.map(order =>
+                    order._id === orderId
+                        ? { ...order, status: 'returned' }
+                        : order
+                ));
+                setShowReturnModal(false);
+            }
+        } catch (error) {
+            console.error('Failed to accept return:', error);
+        }
+    };
+
+    const handleRejectReturn = async (orderId) => {
+        try {
+            console.log('Rejecting order with IDffffffff:', orderId);
+            const response = await axios.post(
+                `http://localhost:5000/api/admin/orders/${orderId}/reject-return`,
+                { action: 'reject',
+                    rejectionReason: rejectionReason },
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                setOrders(orders.map(order =>
+                    order._id === orderId
+                        ? { ...order, status: 'delivered' }
+                        : order
+                ));
+                setShowReturnModal(false);
+                setRejectionReason('');
+            }
+        } catch (error) {
+            console.error('Failed to reject return:', error);
+            if (error.response) {
+                console.error('Error response:', error.response.data);
+            }
+        }
+    };
+
+
     const handleViewDetails = (order) => {
+        console.log('orderrrrrrrr',order.status)
         setSelectedOrder(order);
         setShowModal(true);
+    };
+
+    const handleReturnAction = (order) => {
+        console.log('Selected order for return action:', order);
+        setSelectedOrder(order);
+        setShowReturnModal(true);
     };
 
     const getStatusOptions = (currentStatus) => {
@@ -74,7 +142,10 @@ const OrderManagement = () => {
             'Processing': ['Shipped', 'Cancelled'],
             'Shipped': ['Delivered', 'Cancelled'],
             'Delivered': [],
-            'Cancelled': []
+            'Cancelled': [],
+            'return_requested': [],
+            'returned': []
+
         };
         return statusFlow[capitalizedStatus] || [];
     };
@@ -85,14 +156,16 @@ const OrderManagement = () => {
             'processing': 'info',
             'shipped': 'primary',
             'delivered': 'success',
-            'cancelled': 'danger'
+            'cancelled': 'danger',
+            'return_requested': 'warning',
+            'returned': 'secondary'
         };
         return statusVariants[status] || 'secondary';
     };
 
     useEffect(() => {
         if (searchTerm) {
-            const filtered = orders.filter(order => 
+            const filtered = orders.filter(order =>
                 order.userId?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.orderId?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,26 +240,35 @@ const OrderManagement = () => {
                                         {order.status}
                                     </Badge>
                                 </td>
-
                                 <td>
-                                {console.log('Order Status:', order.status)}
-                                    <Dropdown>
-                                        <Dropdown.Toggle variant="secondary" disabled={order.status == 'cancelled' || order.status == 'delivered'}>
-                                            Change Status
-                                        </Dropdown.Toggle>
-                                        <Dropdown.Menu>
-                                            {getStatusOptions(order.status).map(status => (
-                                                <Dropdown.Item
-                                                    key={status}
-                                                    onClick={() => handleUpdateOrderStatus(order._id, status)}
-                                                >
-                                                    {status}
-                                                </Dropdown.Item>
-                                            ))}
-                                        </Dropdown.Menu>
-                                    </Dropdown>
+                                    {order.status === 'return_requested' ? (
+                                        <Button
+                                            variant="warning"
+                                            onClick={() => handleReturnAction(order)}
+                                        >
+                                            Handle Return Request
+                                        </Button>
+                                    ) : (
+                                        <Dropdown>
+                                            <Dropdown.Toggle
+                                                variant="secondary"
+                                                disabled={['cancelled', 'delivered', 'returned', 'return_requested'].includes(order.status)}
+                                            >
+                                                Change Status
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu>
+                                                {getStatusOptions(order.status).map(status => (
+                                                    <Dropdown.Item
+                                                        key={status}
+                                                        onClick={() => handleUpdateOrderStatus(order._id, status)}
+                                                    >
+                                                        {status}
+                                                    </Dropdown.Item>
+                                                ))}
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+                                    )}
                                 </td>
-
                                 <td>
                                     <Button
                                         variant="info"
@@ -201,6 +283,50 @@ const OrderManagement = () => {
                     </tbody>
                 </Table>
             )}
+
+            <Modal show={showReturnModal} onHide={() => setShowReturnModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Handle Return Request</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedOrder && (
+                        <>
+                            <p><strong>Order ID:</strong> #{selectedOrder.orderId}</p>
+                            <p><strong>Return Reason:</strong> {selectedOrder.returnReason}</p>
+                            <p><strong>Requested Date:</strong> {new Date(selectedOrder.returnRequestedAt).toLocaleString()}</p>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Rejection Reason (required if rejecting)</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder="Enter reason for rejection..."
+                                />
+                            </Form.Group>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowReturnModal(false)}>
+                        Close
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={() => handleRejectReturn(selectedOrder?._id)}
+                        disabled={!rejectionReason.trim()}
+                    >
+                        Reject Return
+                    </Button>
+                    <Button
+                        variant="success"
+                        onClick={() => handleAcceptReturn(selectedOrder?._id)}
+                    >
+                        Accept Return
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
             {/* Order Details Modal */}
             <Modal
@@ -235,6 +361,13 @@ const OrderManagement = () => {
                                 </div>
                             </div>
 
+                            <div className="mb-4">
+                                <h6>Order Status</h6>
+                                <Badge bg={getStatusBadgeVariant(selectedOrder.status)}>
+                                    {selectedOrder.status}
+                                </Badge>
+                            </div>
+
                             <h6>Order Items</h6>
                             <Table>
                                 <thead>
@@ -263,7 +396,11 @@ const OrderManagement = () => {
                                             <td>{item.selectedSize}</td>
                                             <td>{item.quantity}</td>
                                             <td>₹{item.price}</td>
-                                            <td>{item.status}</td>
+                                            <td>
+                                                <Badge bg={getStatusBadgeVariant(selectedOrder.status)}>
+                                                    {selectedOrder.status}
+                                                </Badge>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

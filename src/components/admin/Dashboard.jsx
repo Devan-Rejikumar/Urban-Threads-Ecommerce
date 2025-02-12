@@ -12,7 +12,7 @@ import './Dashboard.css';
 const Dashboard = () => {
     const navigate = useNavigate();
     const [timeFilter, setTimeFilter] = useState('30days');
-    const [chartFilter, setChartFilter] = useState('revenue'); // 'revenue', 'products', 'categories'
+    const [chartFilter, setChartFilter] = useState('revenue'); 
     const [stats, setStats] = useState({
         basicStats: {
             totalUsers: 0,
@@ -93,59 +93,62 @@ const Dashboard = () => {
                 title = 'Revenue Distribution';
                 break;
             case 'products':
-                labels = stats.topProducts.slice(0, 5).map(p => p.name);
-                data = stats.topProducts.slice(0, 5).map(p => p.totalRevenue);
-                backgroundColor = generateColors(5);
-                title = 'Top 5 Products by Revenue';
+                labels = stats.topProducts.map(p => p.name);
+                data = stats.topProducts.map(p => p.totalSales); // Changed to show sales
+                backgroundColor = generateColors(10);
+                title = 'Top 10 Products by Sales';
                 break;
             case 'categories':
-                labels = stats.topCategories.slice(0, 5).map(c => c.name);
-                data = stats.topCategories.slice(0, 5).map(c => c.totalRevenue);
-                backgroundColor = generateColors(5);
-                title = 'Top 5 Categories by Revenue';
+                labels = stats.topCategories.map(c => c.name);
+                data = stats.topCategories.map(c => c.totalSales); // Changed to show sales
+                backgroundColor = generateColors(10);
+                title = 'Top 10 Categories by Sales';
                 break;
             default:
                 break;
         }
 
-        return {
-            labels,
-            datasets: [{
-                data,
-                backgroundColor,
-                borderWidth: 1
-            }]
-        };
+     
+    return {
+        labels,
+        datasets: [{
+            data,
+            backgroundColor,
+            borderWidth: 1
+        }]
     };
+};
 
-    const chartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'right',
-            },
-            title: {
-                display: true,
-                text: `${chartFilter === 'revenue' ? 'Revenue Distribution' : 
-                       chartFilter === 'products' ? 'Top 5 Products by Revenue' :
-                       'Top 5 Categories by Revenue'} (${
-                           timeFilter === '7days' ? 'Last 7 Days' :
-                           timeFilter === '30days' ? 'Last 30 Days' :
-                           timeFilter === '90days' ? 'Last 90 Days' :
-                           timeFilter === 'all' ? 'All Time' :
-                           'Last Year'
-                       })`
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context) => {
-                        const value = context.raw;
-                        return `₹${value.toLocaleString()}`;
-                    }
+const chartOptions = {
+    responsive: true,
+    plugins: {
+        legend: {
+            position: 'right',
+        },
+        title: {
+            display: true,
+            text: `${chartFilter === 'revenue' ? 'Revenue Distribution' : 
+                   chartFilter === 'products' ? 'Top 10 Products by Sales' :
+                   'Top 10 Categories by Sales'} (${
+                       timeFilter === '7days' ? 'Last 7 Days' :
+                       timeFilter === '30days' ? 'Last 30 Days' :
+                       timeFilter === '90days' ? 'Last 90 Days' :
+                       timeFilter === 'all' ? 'All Time' :
+                       'Last Year'
+                   })`
+        },
+        tooltip: {
+            callbacks: {
+                label: (context) => {
+                    const value = context.raw;
+                    return chartFilter === 'revenue' 
+                        ? `₹${value.toLocaleString()}`
+                        : `${value.toLocaleString()} units`;
                 }
             }
         }
-    };
+    }
+};
 
     return (
         <div className="dashboard-container">
@@ -230,7 +233,7 @@ const Dashboard = () => {
                                 <thead>
                                     <tr>
                                         <th>Product</th>
-                                        <th>Sales</th>
+                                        <th>Sales (Units)</th>
                                         <th>Revenue</th>
                                     </tr>
                                 </thead>
@@ -257,7 +260,7 @@ const Dashboard = () => {
                                 <thead>
                                     <tr>
                                         <th>Category</th>
-                                        <th>Sales</th>
+                                        <th>Sales (Units)</th>
                                         <th>Revenue</th>
                                     </tr>
                                 </thead>
