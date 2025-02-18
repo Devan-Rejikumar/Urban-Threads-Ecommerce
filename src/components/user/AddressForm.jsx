@@ -15,7 +15,11 @@ const addressSchema = Yup.object().shape({
     .max(50, 'Last Name must be less than 50 characters'),
   phoneNumber: Yup.string()
     .required('Phone Number is required')
-    .matches(/^\d{10}$/, 'Phone Number must be exactly 10 digits'),
+    .matches(/^[6-9]\d{9}$/, 'Phone number must start with 6-9 and be 10 digits')
+    .test('no-repeated', 'Phone number cannot have excessive repeated digits', value => {
+      if (!value) return true;
+      return !/(.)\1{7,}/.test(value);
+    }),
   streetAddress: Yup.string()
     .required('Street Address is required')
     .max(100, 'Street Address must be less than 100 characters'),
@@ -49,13 +53,13 @@ const AddressForm = ({ show, onHide, editingAddress }) => {
   const handleSaveAddress = async (values, { setSubmitting }) => {
     try {
       if (editingAddress) {
-     
+
         await axiosInstance.put(`/auth/address/${editingAddress._id}`, values);
       } else {
- 
+
         await axiosInstance.post('/auth/address', values);
       }
-      onHide(); 
+      onHide();
     } catch (error) {
       console.error('Error saving address:', error);
     } finally {
@@ -68,7 +72,7 @@ const AddressForm = ({ show, onHide, editingAddress }) => {
     if (editingAddress) {
       setAddress(editingAddress);
     } else {
-   
+
       setAddress({
         firstName: '',
         lastName: '',

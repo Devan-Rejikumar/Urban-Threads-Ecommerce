@@ -13,13 +13,18 @@ const WalletView = () => {
     const [amount, setAmount] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
+    const MAX_AMOUNT = 10000;
+
+   
+    const formatAmount = (value) => {
+        return Number(value).toFixed(2);
+    };
 
     useEffect(() => {
         const fetchWalletData = async () => {
             try {
                 const response = await axiosInstance.get('/wallet');
                 if (response.data.success) {
-                    // Sort transactions by date (newest first)
                     const sortedTransactions = response.data.wallet.transactions.sort(
                         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
                     );
@@ -38,7 +43,6 @@ const WalletView = () => {
         fetchWalletData();
     }, []);
 
-    // Get current transactions for the page
     const indexOfLastTransaction = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstTransaction = indexOfLastTransaction - ITEMS_PER_PAGE;
     const currentTransactions = walletData?.transactions?.slice(indexOfFirstTransaction, indexOfLastTransaction) || [];
@@ -71,12 +75,16 @@ const WalletView = () => {
                 toast.error('Please enter a valid amount');
                 return;
             }
-    
-            // Create Razorpay order
+
+            if (amountValue > MAX_AMOUNT) {
+                toast.error(`Amount cannot exceed ₹${MAX_AMOUNT.toLocaleString()}`);
+                return;
+            }
+
             const orderResponse = await axiosInstance.post('/payment/create-order', {
                 totalAmount: amountValue
             });
-    
+
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: orderResponse.data.order.amount,
@@ -86,24 +94,22 @@ const WalletView = () => {
                 order_id: orderResponse.data.order.id,
                 handler: async function(response) {
                     try {
-                        // Verify payment
                         await axiosInstance.post('/payment/verify-payment', {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature
                         });
-    
-                        // Add money to wallet
+
                         const walletResponse = await axiosInstance.post('/wallet/add', {
                             amount: amountValue,
                             razorpayPaymentId: response.razorpay_payment_id
                         });
-    
+
                         if (walletResponse.data.success) {
                             toast.success('Money added successfully');
                             setShowAddMoneyModal(false);
                             setAmount('');
-                            await fetchWalletData(); // Refresh wallet data
+                            await fetchWalletData(); 
                         }
                     } catch (error) {
                         console.error('Wallet update error:', error);
@@ -114,7 +120,7 @@ const WalletView = () => {
                     color: "#3399cc"
                 }
             };
-    
+
             const rzp = new window.Razorpay(options);
             rzp.open();
         } catch (error) {
@@ -161,10 +167,10 @@ const WalletView = () => {
                         <div className="card wallet-balance-card">
                             <div className="card-body text-center">
                                 <h5 className="card-title mb-3">
-                                    <i className="fas fa-wallet me-2"></i>
+                                    <i className="fas fa-wallet me-2 "></i>
                                     Wallet Balance
                                 </h5>
-                                <h2 className="balance mb-3">₹{walletData?.balance || 0}</h2>
+                                <h2 className="balance mb-3">₹{formatAmount(walletData?.balance || 0)}</h2>
                                 <button 
                                     className="btn btn-primary"
                                     onClick={() => setShowAddMoneyModal(true)}
@@ -204,15 +210,15 @@ const WalletView = () => {
                                         <tbody>
                                             {currentTransactions.map((transaction) => (
                                                 <tr key={transaction._id}>
-                                                    <td>{new Date(transaction.createdAt).toLocaleDateString()}</td>
+                                                    <td>{formatDate(transaction.createdAt)}</td>
                                                     <td>{transaction.description}</td>
                                                     <td>
                                                         <span className={`badge bg-${transaction.type === 'credit' ? 'success' : 'danger'}`}>
                                                             {transaction.type}
                                                         </span>
                                                     </td>
-                                                    <td>₹{transaction.amount}</td>
-                                                    <td>₹{transaction.balance}</td>
+                                                    <td>₹{formatAmount(transaction.amount)}</td>
+                                                    <td>₹{formatAmount(transaction.balance)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -270,56 +276,67 @@ const WalletView = () => {
 
                 {/* Add Money Modal */}
                 <div className={`modal fade ${showAddMoneyModal ? 'show' : ''}`}
-                     style={{ display: showAddMoneyModal ? 'block' : 'none' }}
-                     tabIndex="-1">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Add Money to Wallet</h5>
-                                <button 
-                                    type="button" 
-                                    className="btn-close"
-                                    onClick={() => {
-                                        setShowAddMoneyModal(false);
-                                        setAmount('');
-                                    }}
-                                ></button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">Enter Amount (₹):</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        min="1"
-                                        placeholder="Enter amount"
-                                    />
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button 
-                                    type="button" 
-                                    className="btn btn-secondary"
-                                    onClick={() => {
-                                        setShowAddMoneyModal(false);
-                                        setAmount('');
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="button" 
-                                    className="btn btn-primary"
-                                    onClick={handleAddMoney}
-                                >
-                                    Add Money
-                                </button>
-                            </div>
-                        </div>
+         style={{ display: showAddMoneyModal ? 'block' : 'none' }}
+         tabIndex="-1">
+        <div className="modal-dialog">
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h5 className="modal-title">Add Money to Wallet</h5>
+                    <button 
+                        type="button" 
+                        className="btn-close"
+                        onClick={() => {
+                            setShowAddMoneyModal(false);
+                            setAmount('');
+                        }}
+                    ></button>
+                </div>
+                <div className="modal-body">
+                    <div className="form-group">
+                        <label className="form-label">Enter Amount (₹):</label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            value={amount}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '' || (parseFloat(value) <= MAX_AMOUNT)) {
+                                    setAmount(value);
+                                }
+                            }}
+                            min="1"
+                            max={MAX_AMOUNT}
+                            step="0.01"
+                            placeholder="Enter amount (Max ₹10,000)"
+                        />
+                        <small className="text-muted">
+                            Maximum amount: ₹{MAX_AMOUNT.toLocaleString()}
+                        </small>
                     </div>
                 </div>
+                <div className="modal-footer">
+                    <button 
+                        type="button" 
+                        className="btn btn-secondary"
+                        onClick={() => {
+                            setShowAddMoneyModal(false);
+                            setAmount('');
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        className="btn btn-primary"
+                        onClick={handleAddMoney}
+                        disabled={!amount || parseFloat(amount) > MAX_AMOUNT}
+                    >
+                        Add Money
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
                 {showAddMoneyModal && <div className="modal-backdrop fade show"></div>}
             </div>
             <Footer />

@@ -2,28 +2,17 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import axios from "axios"
+import { publicAxios } from '../../utils/axiosInstance.js';
 import Header from "../../components/user/Header"
 import Footer from "../../components/user/Footer"
 import HeroBanner from "../../components/user/HeroBanner"
 import Carousel from "../../components/user/Carousel"
 import "./home.css"
-import axiosInstance from "../../utils/axiosInstance"
 import ProductCard from "../../components/user/ProductCards"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { isValidOffer, getOfferBadgeText } from '../../utils/offerUtils';
 
 const Home = () => {
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (token) {
-      localStorage.setItem("token", token);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
@@ -35,18 +24,15 @@ const Home = () => {
   useEffect(() => {
     const fetchNewArrivals = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/auth/new-arrivals", {
-          
-          withCredentials: true,
+        const response = await publicAxios.get("/auth/new-arrivals", {
           params: {
             populate: ['category', 'currentOffer']
           }
         });
-        console.log("New arrivals data:", response.data);
         setNewArrivals(response.data);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching new arrivals:", err);
+   
         setError("Failed to fetch new arrivals");
         setLoading(false);
       }
@@ -59,13 +45,13 @@ const Home = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/categories", {
-          withCredentials: true,
+        const response = await publicAxios.get("/categories", {
+         
           params: {
             populate: 'currentOffer'
           }
         });
-        console.log("Categories with offers:", response.data);
+      
         const activeCategories = response.data.filter(
           (category) => category.isActive && !category.isDeleted
         );
@@ -73,7 +59,7 @@ const Home = () => {
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch categories");
-        console.error("Error fetching categories:", err);
+       
         setLoading(false);
       }
     };

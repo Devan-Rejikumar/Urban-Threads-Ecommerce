@@ -1,6 +1,14 @@
 
 import axios from 'axios';
 
+export const publicAxios = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    withCredentials: false  // Don't send credentials for public routes
+});
+
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
     headers: {
@@ -28,8 +36,14 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         if(error.response?.status === 401){
-            localStorage.removeItem('token');
-            window.location.href = '/login'
+            const publicRoutes = ['/', '/login', '/register', '/shop', '/category', '/product'];
+            const currentPath = window.location.pathname;
+            const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
+            if(!isPublicRoute){
+                localStorage.removeItem('token');
+                 window.location.href = '/login'
+            }
+            
         }
         return Promise.reject(error)
     }

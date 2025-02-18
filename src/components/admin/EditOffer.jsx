@@ -4,9 +4,8 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axiosInstance from '../../utils/axiosInstance';
-import { toast } from 'react-toastify';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const validationSchema = Yup.object().shape({
     name: Yup.string().required('Required'),
@@ -34,6 +33,7 @@ const EditOffer = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -42,9 +42,9 @@ const EditOffer = () => {
     const fetchData = async () => {
         try {
             const [offerRes, productsRes, categoriesRes] = await Promise.all([
-                axios.get(`http://localhost:5000/api/admin/offers/${id}`),
-                axios.get('http://localhost:5000/api/admin/products'),
-                axios.get('http://localhost:5000/api/admin/categories')
+                axios.get(`http://localhost:5000/api/admin/offers/${id}`, { withCredentials: true }),
+                axios.get('http://localhost:5000/api/admin/products', { withCredentials: true }),
+                axios.get('http://localhost:5000/api/admin/categories', { withCredentials: true })
             ]);
 
             setOffer({
@@ -55,8 +55,18 @@ const EditOffer = () => {
             setProducts(productsRes.data.products);
             setCategories(categoriesRes.data.categories);
         } catch (error) {
-            toast.error('Failed to fetch data');
-            navigate('/admin/offers');
+            console.error('Error fetching data:', error);
+            setError(error.response?.data?.message || 'Error fetching data');
+            
+            if (error.response?.status === 401) {
+                toast.error('Please login to continue');
+                navigate('/admin/login');
+            } else if (error.response?.status === 404) {
+                toast.error('Offer or resources not found');
+                navigate('/admin/offers');
+            } else {
+                toast.error('Failed to fetch data: ' + (error.response?.data?.message || 'Unknown error'));
+            }
         } finally {
             setLoading(false);
         }
@@ -64,18 +74,48 @@ const EditOffer = () => {
 
     const handleSubmit = async (values, { setSubmitting }) => {
         try {
-            await axios.put(`http://localhost:5000/api/admin/offers/${id}`, values);
-            toast.success('Offer updated successfully');
-            navigate('/admin/offers');
+            const response = await axios.put(
+                `http://localhost:5000/api/admin/offers/${id}`,
+                values,
+                { withCredentials: true }
+            );
+            
+            if (response.data.success) {
+                toast.success('Offer updated successfully');
+                navigate('/admin/offers');
+            }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Update failed');
+            console.error('Error updating offer:', error);
+            if (error.response?.status === 401) {
+                toast.error('Please login to continue');
+                navigate('/admin/login');
+            } else {
+                toast.error(error.response?.data?.message || 'Update failed');
+            }
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return <div>Loading...</div>;
-    if (!offer) return <div>Offer not found</div>;
+    if (loading) return (
+        <div className="d-flex justify-content-center align-items-center min-vh-100">
+            <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    );
+
+    if (error) return (
+        <div className="alert alert-danger m-4" role="alert">
+            {error}
+        </div>
+    );
+
+    if (!offer) return (
+        <div className="alert alert-warning m-4" role="alert">
+            Offer not found
+        </div>
+    );
 
     return (
         <div className="container mt-4">
@@ -121,12 +161,43 @@ const EditOffer = () => {
                                     </div>
 
                                     <div className="col-md-6">
+                                        <label className="form-label">Applicable Type</label>
+                                        <Field name="applicableType" as="select" className="form-select">
+                                            <option value="">Select Type</option>
+                                            <option value="product">Product</option>
+                                            <option value="category">Category</option>
+                                        </Field>
+                                        <ErrorMessage name="applicableType" component="div" className="text-danger" />
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <label className="form-label">Applicable Item</label>
+                                        <Field name="applicableId" as="select" className="form-select">
+                                            <option value="">Select Item</option>
+                                            {values.applicableType === 'product' && products.map(product => (
+                                                <option key={product._id} value={product._id}>
+                                                    {product.name}
+                                                </option>
+                                            ))}
+                                            {values.applicableType === 'category' && categories.map(category => (
+                                                <option key={category._id} value={category._id}>
+                                                    {category.name}
+                                                </option>
+                                            ))}
+                                        </Field>
+                                        <ErrorMessage name="applicableId" component="div" className="text-danger" />
+                                    </div>
+
+                                    <div className="col-md-6">
                                         <label className="form-label">Start Date</label>
                                         <DatePicker
                                             selected={values.startDate}
                                             onChange={date => setFieldValue('startDate', date)}
                                             className="form-control"
+                                            dateFormat="dd/MM/yyyy"
+                                            minDate={new Date()}
                                         />
+                                        <ErrorMessage name="startDate" component="div" className="text-danger" />
                                     </div>
 
                                     <div className="col-md-6">
@@ -135,8 +206,10 @@ const EditOffer = () => {
                                             selected={values.endDate}
                                             onChange={date => setFieldValue('endDate', date)}
                                             className="form-control"
-                                            minDate={values.startDate}
+                                            dateFormat="dd/MM/yyyy"
+                                            minDate={values.startDate || new Date()}
                                         />
+                                        <ErrorMessage name="endDate" component="div" className="text-danger" />
                                     </div>
 
                                     <div className="col-12">

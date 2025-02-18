@@ -5,7 +5,7 @@ import { ProductCard } from '../../components/user/ProductCard';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import './ProductDetails.css';
-import Breadcrumbs from '../../components/breadcrumbs/user/userBreadcrumbs';
+import Breadcrumbs from '../../components/BreadCrumps';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, setCart } from '../../redux/slices/cartSlice';
 import { toast } from 'react-toastify';
@@ -46,7 +46,7 @@ const ProductDetail = () => {
         setAllProducts(allProductsResponse.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching product:', err);
+
         setError(err.response?.data?.error || 'Failed to fetch product');
         setLoading(false);
       }
@@ -60,10 +60,9 @@ const ProductDetail = () => {
       if (isAuthenticated) {
         try {
           const response = await axiosInstance.get('/wishlist');
-          // Assuming the response data is an array of products
           dispatch(setWishlist(response.data));
         } catch (error) {
-          console.error('Error fetching wishlist:', error);
+
         }
       }
     };
@@ -113,14 +112,11 @@ const ProductDetail = () => {
         selectedSize: selectedSize,
         quantity: quantity
       };
-
-      // First add the item to cart
       await axiosInstance.post('/cart/add', productToAdd);
 
-      // Then fetch the updated cart data
       const updatedCartResponse = await axiosInstance.get('/cart');
       if (updatedCartResponse.data) {
-        // Map the cart items to match Redux store structure
+
         const cartItems = updatedCartResponse.data.items.map(item => ({
           productId: item.productId._id,
           name: item.productId.name,
@@ -146,7 +142,7 @@ const ProductDetail = () => {
       } else {
         toast.error('An error occurred while adding to cart');
       }
-      console.error('Error details:', error.response || error);
+
     }
   };
 
@@ -189,42 +185,52 @@ const ProductDetail = () => {
   const handleWishlistClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
-        toast.error('Please login to add items to wishlist');
-        navigate('/login');
-        return;
+      toast.error('Please login to add items to wishlist');
+      navigate('/login');
+      return;
     }
 
     try {
-        const isItemInWishlist = wishlistItems.some(item => item._id === product._id);
-        
-        if (isItemInWishlist) {
-            await axiosInstance.delete(`/wishlist/remove/${product._id}`);
-            dispatch(removeFromWishlist(product._id));
-            toast.success('Removed from wishlist');
-        } else {
-            // Add to wishlist
-            const response = await axiosInstance.post('/wishlist/add', { 
-                productId: product._id 
-            });
-            
-            dispatch(setWishlist(response.data.wishlist));
-            toast.success('Added to wishlist');
-        }
+      const isItemInWishlist = wishlistItems.some(item => item._id === product._id);
+
+      if (isItemInWishlist) {
+        dispatch(removeFromWishlist(product._id));
+        await axiosInstance.delete(`/wishlist/remove/${product._id}`);
+        // dispatch(removeFromWishlist(product._id));
+        toast.success('Removed from wishlist');
+      } else {
+        // Add to wishlist
+        dispatch(addToWishlist(product));
+        const response = await axiosInstance.post('/wishlist/add', {
+          productId: product._id
+        });
+
+        if (!response.data.success) {
+          // Revert the optimistic update if the API call fails
+          dispatch(removeFromWishlist(product._id));
+          throw new Error('Failed to add to wishlist');
+      }
+      
+      toast.success('Added to wishlist');
+  }
     } catch (error) {
-        console.error('Wishlist error:', error);
-        toast.error(error.response?.data?.error || 'Error updating wishlist');
+
+      toast.error(error.response?.data?.error || 'Error updating wishlist');
+      try {
+        const response = await axiosInstance.get('/wishlist');
+            dispatch(setWishlist(response.data));
+      } catch (error) {
+        console.error('Error refreshing wishlist:', refreshError);
+      }
     }
-};
+  };
 
   return (
     <>
       <Header />
-      <Breadcrumbs
-        categoryName={product?.category?.name}
-        productName={product?.name}
-      />
+      <Breadcrumbs />
       <div className="product-detail-container">
         <div className="product-detail-grid">
           <div className="image-gallery">

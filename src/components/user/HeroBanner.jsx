@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import './HeroBanner.css';
 
 const HeroBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const navigate = useNavigate(); 
 
   const bannerSlides = [
     {
@@ -27,7 +29,7 @@ const HeroBanner = () => {
       setCurrentSlide((prevSlide) => 
         prevSlide === bannerSlides.length - 1 ? 0 : prevSlide + 1
       );
-    }, 5000); // Change slide every 5 seconds
+    }, 5000); 
 
     return () => clearInterval(timer);
   }, []);
@@ -62,7 +64,12 @@ const HeroBanner = () => {
             <div className="slide-content">
               <h1>{slide.title}</h1>
               <p>{slide.subtitle}</p>
-              <button className="shop-now-btn">Shop Now</button>
+              <button 
+                className="shop-now-btn"
+                onClick={() => navigate('/shop')} 
+              >
+                Shop Now
+              </button>
             </div>
           </div>
         ))}
@@ -89,4 +96,3 @@ const HeroBanner = () => {
 };
 
 export default HeroBanner;
-

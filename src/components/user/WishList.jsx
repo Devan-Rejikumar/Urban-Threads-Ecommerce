@@ -8,6 +8,7 @@ import { Trash2, ShoppingCart, Heart } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
+import Swal from 'sweetalert2';
 
 const Wishlist = () => {
     const dispatch = useDispatch();
@@ -30,63 +31,100 @@ const Wishlist = () => {
     }, [dispatch]);
 
     const handleRemoveFromWishlist = async (productId) => {
-        console.log('Attempting to remove product:', productId);
         try {
-            // Make the API call first
-            const response = await axiosInstance.delete(`/wishlist/remove/${productId}`);
-            console.log('Delete API response:', response);
-    
-            if (response.status === 200) {
-                // First, update the Redux state immediately for optimistic UI update
-                dispatch(removeFromWishlist(productId));
-                
-                // If the API returns an updated wishlist, use that to ensure consistency
-                if (response.data.updatedWishlist) {
-                    dispatch(setWishlist(response.data.updatedWishlist));
+            // Show confirmation dialog
+            const result = await Swal.fire({
+                title: 'Remove from Wishlist?',
+                text: 'Are you sure you want to remove this item from your wishlist?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, remove it!',
+                cancelButtonText: 'Cancel'
+            });
+
+            // If user confirms
+            if (result.isConfirmed) {
+                const response = await axiosInstance.delete(`/wishlist/remove/${productId}`);
+                console.log('Delete API response:', response);
+        
+                if (response.status === 200) {
+                    dispatch(removeFromWishlist(productId));
+                    
+                    if (response.data.updatedWishlist) {
+                        dispatch(setWishlist(response.data.updatedWishlist));
+                    }
+                    
+                    Swal.fire(
+                        'Removed!',
+                        'Item has been removed from your wishlist.',
+                        'success'
+                    );
+                } else {
+                    throw new Error('Failed to remove item');
                 }
-                toast.success('Item removed from wishlist');
-            } else {
-                throw new Error('Failed to remove item');
             }
         } catch (error) {
             console.error('Error in handleRemoveFromWishlist:', error);
-            toast.error('Error removing item from wishlist');
-            // Optionally refresh the wishlist to ensure consistency
+            Swal.fire(
+                'Error!',
+                'Failed to remove item from wishlist.',
+                'error'
+            );
             fetchWishlistItems();
         }
     };
 
     const handleAddToCart = async (product) => {
         try {
-            // Prepare the cart item data
-            const cartProduct = {
-                productId: product._id,
-                name: product.name,
-                image: product.images[0],
-                price: product.salePrice || product.originalPrice,
-                quantity: 1,
-                selectedSize: product.variants[0]?.size || 'M',
-                stock: product.variants[0]?.stock || 0,
-                maxPerPerson: 5
-            };
-    
-            // First make the API call to add to cart
-            await axiosInstance.post('/cart/add', {
-                productId: product._id,
-                quantity: 1,
-                selectedSize: cartProduct.selectedSize
+            // Show confirmation dialog
+            const result = await Swal.fire({
+                title: 'Add to Cart?',
+                text: 'Would you like to add this item to your cart?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, add to cart!',
+                cancelButtonText: 'Cancel'
             });
-    
-            // Then update Redux state
-            dispatch(addToCart(cartProduct));
-            
-            // Remove from wishlist
-            await handleRemoveFromWishlist(product._id);
-            
-            toast.success('Item added to cart');
+
+            // If user confirms
+            if (result.isConfirmed) {
+                const cartProduct = {
+                    productId: product._id,
+                    name: product.name,
+                    image: product.images[0],
+                    price: product.salePrice || product.originalPrice,
+                    quantity: 1,
+                    selectedSize: product.variants[0]?.size || 'M',
+                    stock: product.variants[0]?.stock || 0,
+                    maxPerPerson: 5
+                };
+        
+                await axiosInstance.post('/cart/add', {
+                    productId: product._id,
+                    quantity: 1,
+                    selectedSize: cartProduct.selectedSize
+                });
+        
+                dispatch(addToCart(cartProduct));
+                await handleRemoveFromWishlist(product._id);
+                
+                Swal.fire(
+                    'Added to Cart!',
+                    'Item has been added to your cart and removed from wishlist.',
+                    'success'
+                );
+            }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error('Error adding item to cart');
+            Swal.fire(
+                'Error!',
+                'Failed to add item to cart.',
+                'error'
+            );
         }
     };
 

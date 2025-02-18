@@ -26,9 +26,9 @@ const Footer = () => {
           {/* Support Column */}
           <div className="col-md-3 mb-4">
             <h5 className="footer-heading">Support</h5>
-            <p className="address">111 Bijoy sarani, Dhaka,<br />DH 1515, Bangladesh.</p>
-            <p>exclusive@gmail.com</p>
-            <p>+88015-88888-9999</p>
+            <p className="address">Urban Threads, Thread House<br />DH 1515, India.</p>
+            <p>urbanThreads@gmail.com</p>
+            <p>+91-95622-09682</p>
           </div>
 
           {/* Account Column */}

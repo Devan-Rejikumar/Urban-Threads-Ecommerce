@@ -1,0 +1,26 @@
+
+  .bg-dark {
+    background-color: #001733 !important;
+  }
+  
+  .text-info {
+    text-decoration: none;
+  }
+  
+  .text-info:hover {
+    text-decoration: underline;
+  }
+  
+  .shadow {
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn-primary {
+    background-color: #0056b3;
+    border: none;
+  }
+  
+  .btn-primary:hover {
+    background-color: #004494;
+  }
+  

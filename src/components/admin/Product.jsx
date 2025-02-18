@@ -6,6 +6,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Product.css';
 import Cropper from 'react-easy-crop';
+import { Breadcrumb } from 'react-bootstrap';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
 
 const initialFormData = {
   name: '',
@@ -33,6 +36,39 @@ const colorOptions = [
   { name: 'Navy', hex: '#000080' }
 ];
 
+const ProductSchema = Yup.object().shape({
+  name: Yup.string()
+    .trim()
+    .required('Product name is required'),
+  category: Yup.string()
+    .required('Category is required'),
+  description: Yup.string(),
+  originalPrice: Yup.number()
+    .positive('Original price must be greater than 0')
+    .required('Original price is required'),
+  salePrice: Yup.number()
+    .nullable()
+    .transform((value, originalValue) => originalValue === "" ? null : value)
+    .positive('Sale price must be greater than 0')
+    .test('less-than-original', 'Sale price must be less than original price',
+      function (value) {
+        return !value || value < this.parent.originalPrice;
+      }),
+  variants: Yup.array().of(
+    Yup.object().shape({
+      size: Yup.string().required('Size is required'),
+      color: Yup.string().required('Color is required'),
+      stock: Yup.number()
+        .min(0, 'Stock must be 0 or greater')
+        .required('Stock is required')
+    })
+  ).min(1, 'At least one variant is required'),
+  images: Yup.array()
+    .test('at-least-one-image', 'At least one product image is required',
+      (value) => value && value.some(img => img !== null))
+});
+
+
 const Product = () => {
   const [showCreateProductsDialog, setShowCreateProductsDialog] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
@@ -45,13 +81,19 @@ const Product = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(9); 
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState([]);
+
+
 
   const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const fetchCategories = async () => {
     try {
@@ -70,10 +112,14 @@ const Product = () => {
         withCredentials: true
       });
       setProducts(response.data);
+      setTotalProducts(response.data.total);
+      setTotalPages(Math.ceil(response.data.total / itemsPerPage));
     } catch (error) {
       toast.error('Failed to load products');
     }
   };
+
+
 
   const handleEdit = (product) => {
     setIsEditing(true);
@@ -87,7 +133,7 @@ const Product = () => {
       images: product.images || [null, null, null],
       variants: product.variants.map(v => ({
         size: v.size || 'M',
-        color: v.color || '#000000', 
+        color: v.color || '#000000',
         stock: v.stock || 0
       })),
       isListed: product.isListed
@@ -126,18 +172,6 @@ const Product = () => {
   };
 
   const validateImage = (dataUrl) => {
-   
-    // if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-    //   throw new Error('Invalid image format. Please upload a valid image.');
-    // }
-
-    // // Check file size (max 5MB)
-    // const base64String = dataUrl.split(',')[1];
-    // const fileSize = (base64String.length * 3) / 4; // Approximate size in bytes
-    // if (fileSize > 5 * 1024 * 1024) {
-    //   throw new Error('Image size must be less than 5MB');
-    // }
-
     return true;
   };
 
@@ -145,7 +179,7 @@ const Product = () => {
     const file = e.target.files[0];
 
     try {
-   
+
       if (!file.type.startsWith('image/')) {
         throw new Error('Please upload an image file');
       }
@@ -156,7 +190,7 @@ const Product = () => {
           const dataUrl = event.target.result;
           validateImage(dataUrl);
 
-     
+
           setImageSrc(dataUrl);
           setSelectedImageIndex(index);
         } catch (error) {
@@ -223,7 +257,7 @@ const Product = () => {
         images: updatedImages
       }));
 
-     
+
       setImageSrc(null);
       setSelectedImageIndex(null);
       setCroppedAreaPixels(null);
@@ -278,24 +312,22 @@ const Product = () => {
   };
 
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Form submission started');
-    
+
+
+  const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      if (!formData) {
+      if (!values) {
         throw new Error('Form data is missing');
       }
-  
-      const variants = Array.isArray(formData.variants) 
-        ? formData.variants 
+
+      const variants = Array.isArray(values.variants)
+        ? values.variants
         : [{ size: 'M', color: '#000000', stock: 0 }];
-  
-      // Filter out null/invalid images and validate the remaining ones
+
       const images = [];
-      if (Array.isArray(formData.images)) {
-        for (let i = 0; i < formData.images.length; i++) {
-          const image = formData.images[i];
+      if (Array.isArray(values.images)) {
+        for (let i = 0; i < values.images.length; i++) {
+          const image = values.images[i];
           try {
             if (image && validateImage(image)) {
               images.push(image);
@@ -305,60 +337,50 @@ const Product = () => {
           }
         }
       }
-  
-
-      if (images.length === 0) {
-        throw new Error('At least one valid image is required');
-      }
-  
-     
-      if (!formData.name.trim()) throw new Error('Product name is required');
-      if (!formData.category) throw new Error('Category is required');
-      if (!formData.originalPrice) throw new Error('Original price is required');
-  
       const productData = {
-      name: formData.name.trim(),
-      category: formData.category,
-      description: formData.description || '',
-      originalPrice: Number(formData.originalPrice),
-      salePrice: formData.salePrice ? Number(formData.salePrice) : null,
-      isListed: Boolean(formData.isListed),
-      variants: formData.variants.map(variant => ({
-        size: String(variant.size),
-        color: String(variant.color),
-        stock: Number(variant.stock)
-      })),
-      images: images
-    };
+        name: values.name.trim(),
+        category: values.category,
+        description: values.description || '',
+        originalPrice: Number(values.originalPrice),
+        salePrice: values.salePrice ? Number(values.salePrice) : null,
+        isListed: Boolean(values.isListed),
+        variants: values.variants.map(variant => ({
+          size: String(variant.size),
+          color: String(variant.color),
+          stock: Number(variant.stock)
+        })),
+        images: images
+      };
 
-    const url = isEditing
-      ? `http://localhost:5000/api/products/${editingProductId}`
-      : 'http://localhost:5000/api/products';
+      const url = isEditing
+        ? `http://localhost:5000/api/products/${editingProductId}`
+        : 'http://localhost:5000/api/products';
 
-  
-    const response = await axios({
-      method: isEditing ? 'put' : 'post',
-      url: url,
-      data: JSON.stringify(productData), 
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true,
-      transformRequest: [(data) => data] 
-    });
+      const response = await axios({
+        method: isEditing ? 'put' : 'post',
+        url: url,
+        data: JSON.stringify(productData),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+        transformRequest: [(data) => data]
+      });
 
-    toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
-    setShowCreateProductsDialog(false);
-    setFormData(initialFormData);
-    setIsEditing(false);
-    setEditingProductId(null);
-    fetchProducts();
-  } catch (error) {
-    console.error('Server error response:', error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving the product.';
-    toast.error(errorMessage);
-  }
-};
+      toast.success(isEditing ? 'Product Updated Successfully' : 'Product Added Successfully');
+      setShowCreateProductsDialog(false);
+      setFormData(initialFormData);
+      setIsEditing(false);
+      setEditingProductId(null);
+      fetchProducts();
+    } catch (error) {
+      console.error('Server error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving the product.';
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -372,8 +394,58 @@ const Product = () => {
     return colorOption ? colorOption.name : hexValue;
   };
 
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(
+        <li key={i} className={`page-item ${currentPage === i ? 'active' : ''}`}>
+          <button
+            className="page-link"
+            onClick={() => onPageChange(i)}
+          >
+            {i}
+          </button>
+        </li>
+      );
+    }
+
+    return (
+      <nav aria-label="Product pagination">
+        <ul className="pagination justify-content-center">
+          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+            <button
+              className="page-link"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+          </li>
+          {pages}
+          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+            <button
+              className="page-link"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
+    );
+  };
+
   return (
     <div className="container-fluid py-4">
+      <Breadcrumb className="mt-3">
+        <Breadcrumb.Item href="/admin-dashboard">Dashboard</Breadcrumb.Item>
+        <Breadcrumb.Item active>Product</Breadcrumb.Item>
+      </Breadcrumb>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Product Management</h2>
         <button className="btn btn-primary" onClick={() => setShowCreateProductsDialog(true)}>
@@ -435,267 +507,243 @@ const Product = () => {
                 <button type="button" className="btn-close" onClick={resetForm}></button>
               </div>
               <div className="modal-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label className="form-label">Product Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
+                <Formik
+                  initialValues={formData}
+                  validationSchema={ProductSchema}
+                  onSubmit={handleSubmit}
+                  enableReinitialize
+                >
+                  {({ errors, touched, values, setFieldValue, isSubmitting }) => (
+                    <Form>
+                      <div className="mb-3">
+                        <label className="form-label">Product Name</label>
+                        <Field
+                          type="text"
+                          className={`form-control ${errors.name && touched.name ? 'is-invalid' : ''}`}
+                          name="name"
+                        />
+                        {errors.name && touched.name && (
+                          <div className="invalid-feedback">{errors.name}</div>
+                        )}
+                      </div>
 
-                  <div className="mb-3">
-  <label className="form-label">Category</label>
-  <select
-    className="form-select"
-    name="category"
-    value={formData.category}
-    onChange={handleInputChange}
-    required
-  >
-    <option value="">Select Category</option>
-    {categories.map((cat) => (
-      <option key={cat._id} value={cat._id}>
-        {cat.name}
-      </option>
-    ))}
-  </select>
-</div>
+                      <div className="mb-3">
+                        <label className="form-label">Category</label>
+                        <Field
+                          as="select"
+                          className={`form-select ${errors.category && touched.category ? 'is-invalid' : ''}`}
+                          name="category"
+                        >
+                          <option value="">Select Category</option>
+                          {categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </Field>
+                        {errors.category && touched.category && (
+                          <div className="invalid-feedback">{errors.category}</div>
+                        )}
+                      </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea
-                      className="form-control"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows="3"
-                    />
-                  </div>
+                      <div className="mb-3">
+                        <label className="form-label">Description</label>
+                        <Field
+                          as="textarea"
+                          className={`form-control ${errors.description && touched.description ? 'is-invalid' : ''}`}
+                          name="description"
+                          rows="3"
+                        />
+                        {errors.description && touched.description && (
+                          <div className="invalid-feedback">{errors.description}</div>
+                        )}
+                      </div>
 
-                  <div className="row mb-3">
-                    <div className="col">
-                      <label className="form-label">Original Price</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        name="originalPrice"
-                        value={formData.originalPrice}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                    <div className="col">
-                      <label className="form-label">Sale Price</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        name="salePrice"
-                        value={formData.salePrice}
-                        onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Product Images</label>
-                    <div className="row g-3">
-                      {[0, 1, 2].map((index) => (
-                        <div key={index} className="col-4">
-                          <div className="border rounded p-2 text-center">
-                            {formData.images[index] ? (
-                              <div className="position-relative">
-                                <img
-                                  src={formData.images[index]}
-                                  alt={`Product ${index + 1}`}
-                                  className="img-fluid mb-2"
-                                />
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-danger position-absolute top-0 end-0"
-                                  onClick={() => removeImage(index)}
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            ) : (
-                              <div>
-                                <input
-                                  type="file"
-                                  id={`image-${index}`}
-                                  className="d-none"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(e, index)}
-                                />
-                                <label
-                                  htmlFor={`image-${index}`}
-                                  className="btn btn-outline-primary"
-                                >
-                                  <Upload size={24} />
-                                  <div>Upload</div>
-                                </label>
-                              </div>
-                            )}
-                          </div>
+                      <div className="row mb-3">
+                        <div className="col">
+                          <label className="form-label">Original Price</label>
+                          <Field
+                            type="number"
+                            className={`form-control ${errors.originalPrice && touched.originalPrice ? 'is-invalid' : ''}`}
+                            name="originalPrice"
+                            min="0"
+                            step="0.01"
+                          />
+                          {errors.originalPrice && touched.originalPrice && (
+                            <div className="invalid-feedback">{errors.originalPrice}</div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  {imageSrc && (
-                    <div className="modal show d-block" tabIndex="-1">
-                      <div className="modal-dialog modal-lg">
-                        <div className="modal-content">
-                          <div className="modal-header">
-                            <h5 className="modal-title">Crop Image</h5>
-                            <button
-                              type="button"
-                              className="btn-close"
-                              onClick={() => {
-                                setImageSrc(null);
-                                setSelectedImageIndex(null);
-                                setCroppedAreaPixels(null);
-                                setZoom(1);
-                                setCrop({ x: 0, y: 0 });
-                              }}
-                            ></button>
-                          </div>
-                          <div className="modal-body">
-                            <div style={{ position: 'relative', height: '400px' }}>
-                              <Cropper
-                                image={imageSrc}
-                                crop={crop}
-                                zoom={zoom}
-                                aspect={1}
-                                onCropChange={setCrop}
-                                onZoomChange={setZoom}
-                                onCropComplete={onCropComplete}
-                              />
-                            </div>
-                            <div className="mt-2">
-                              <label>Zoom</label>
-                              <input
-                                type="range"
-                                min={1}
-                                max={3}
-                                step={0.1}
-                                value={zoom}
-                                onChange={(e) => setZoom(Number(e.target.value))}
-                                className="form-range"
-                              />
-                            </div>
-                          </div>
-                          <div className="modal-footer">
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => {
-                                setImageSrc(null);
-                                setSelectedImageIndex(null);
-                                setCroppedAreaPixels(null);
-                                setZoom(1);
-                                setCrop({ x: 0, y: 0 });
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              onClick={handleCropComplete}
-                            >
-                              Crop & Save
-                            </button>
-                          </div>
+                        <div className="col">
+                          <label className="form-label">Sale Price</label>
+                          <Field
+                            type="number"
+                            className={`form-control ${errors.salePrice && touched.salePrice ? 'is-invalid' : ''}`}
+                            name="salePrice"
+                            min="0"
+                            step="0.01"
+                          />
+                          {errors.salePrice && touched.salePrice && (
+                            <div className="invalid-feedback">{errors.salePrice}</div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="mb-3">
-                    <label className="form-label d-flex justify-content-between align-items-center">
-                      Variants
-                      <button type="button" className="btn btn-sm btn-primary" onClick={addVariant}>
-                        <Plus size={16} /> Add Variant
-                      </button>
-                    </label>
-                    {formData.variants.map((variant, index) => (
-                      <div key={index} className="card mb-2">
-                        <div className="card-body">
-                          <div className="row g-3">
-                            <div className="col">
-                              <select
-                                className="form-select"
-                                value={variant.size}
-                                onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
-                              >
-                                {sizes.map(size => (
-                                  <option key={size} value={size}>{size}</option>
-                                ))}
-                              </select>
+
+                      <div className="mb-3">
+                        <label className="form-label">Product Images</label>
+                        <div className="row g-3">
+                          {[0, 1, 2].map((index) => (
+                            <div key={index} className="col-4">
+                              <div className="border rounded p-2 text-center">
+                                {values.images[index] ? (
+                                  <div className="position-relative">
+                                    <img
+                                      src={values.images[index]}
+                                      alt={`Product ${index + 1}`}
+                                      className="img-fluid mb-2"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                      onClick={() => {
+                                        const newImages = [...values.images];
+                                        newImages[index] = null;
+                                        setFieldValue('images', newImages);
+                                      }}
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <input
+                                      type="file"
+                                      id={`image-${index}`}
+                                      className="d-none"
+                                      accept="image/*"
+                                      onChange={(e) => handleImageUpload(e, index)}
+                                    />
+                                    <label
+                                      htmlFor={`image-${index}`}
+                                      className="btn btn-outline-primary"
+                                    >
+                                      <Upload size={24} />
+                                      <div>Upload</div>
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="col">
-                              <select
-                                className="form-select"
-                                value={getColorName(variant.color)}
-                                onChange={(e) => handleVariantChange(index, 'color', e.target.value)}
-                              >
-                                {colorOptions.map(color => (
-                                  <option
-                                    key={color.name}
-                                    value={color.name}
-                                    style={{
-                                      backgroundColor: color.hex,
-                                      color: ['White', 'Yellow'].includes(color.name) ? 'black' : 'white'
-                                    }}
+                          ))}
+                        </div>
+                        {errors.images && touched.images && (
+                          <div className="text-danger mt-2">{errors.images}</div>
+                        )}
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="form-label d-flex justify-content-between align-items-center">
+                          Variants
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => {
+                              const newVariants = [...values.variants, { size: 'M', color: '#000000', stock: 0 }];
+                              setFieldValue('variants', newVariants);
+                            }}
+                          >
+                            <Plus size={16} /> Add Variant
+                          </button>
+                        </label>
+                        {values.variants.map((variant, index) => (
+                          <div key={index} className="card mb-2">
+                            <div className="card-body">
+                              <div className="row g-3">
+                                <div className="col">
+                                  <Field
+                                    as="select"
+                                    className={`form-select ${errors.variants?.[index]?.size && touched.variants?.[index]?.size ? 'is-invalid' : ''
+                                      }`}
+                                    name={`variants.${index}.size`}
                                   >
-                                    {color.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="col">
-                              <input
-                                type="number"
-                                className="form-control"
-                                value={variant.stock}
-                                onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                                min="0"
-                                placeholder="Stock"
-                              />
-                            </div>
-                            {formData.variants.length > 1 && (
-                              <div className="col-auto">
-                                <button
-                                  type="button"
-                                  className="btn btn-danger"
-                                  onClick={() => removeVariant(index)}
-                                >
-                                  <Trash size={16} />
-                                </button>
+                                    {sizes.map(size => (
+                                      <option key={size} value={size}>{size}</option>
+                                    ))}
+                                  </Field>
+                                  {errors.variants?.[index]?.size && touched.variants?.[index]?.size && (
+                                    <div className="invalid-feedback">{errors.variants[index].size}</div>
+                                  )}
+                                </div>
+                                <div className="col">
+                                  <Field
+                                    as="select"
+                                    className={`form-select ${errors.variants?.[index]?.color && touched.variants?.[index]?.color ? 'is-invalid' : ''
+                                      }`}
+                                    name={`variants.${index}.color`}
+                                  >
+                                    {colorOptions.map(color => (
+                                      <option
+                                        key={color.name}
+                                        value={color.hex}
+                                        style={{
+                                          backgroundColor: color.hex,
+                                          color: ['White', 'Yellow'].includes(color.name) ? 'black' : 'white'
+                                        }}
+                                      >
+                                        {color.name}
+                                      </option>
+                                    ))}
+                                  </Field>
+                                  {errors.variants?.[index]?.color && touched.variants?.[index]?.color && (
+                                    <div className="invalid-feedback">{errors.variants[index].color}</div>
+                                  )}
+                                </div>
+                                <div className="col">
+                                  <Field
+                                    type="number"
+                                    className={`form-control ${errors.variants?.[index]?.stock && touched.variants?.[index]?.stock ? 'is-invalid' : ''
+                                      }`}
+                                    name={`variants.${index}.stock`}
+                                    min="0"
+                                    placeholder="Stock"
+                                  />
+                                  {errors.variants?.[index]?.stock && touched.variants?.[index]?.stock && (
+                                    <div className="invalid-feedback">{errors.variants[index].stock}</div>
+                                  )}
+                                </div>
+                                {values.variants.length > 1 && (
+                                  <div className="col-auto">
+                                    <button
+                                      type="button"
+                                      className="btn btn-danger"
+                                      onClick={() => {
+                                        const newVariants = values.variants.filter((_, i) => i !== index);
+                                        setFieldValue('variants', newVariants);
+                                      }}
+                                    >
+                                      <Trash size={16} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
+                        ))}
+                        {errors.variants && touched.variants && (
+                          <div className="text-danger">{errors.variants}</div>
+                        )}
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={resetForm}>
-                      Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                      {isEditing ? 'Update Product' : 'Add Product'}
-                    </button>
-                  </div>
-                </form>
+                      <div className="modal-footer">
+                        <button type="button" className="btn btn-secondary" onClick={resetForm}>
+                          Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                          {isEditing ? 'Update Product' : 'Add Product'}
+                        </button>
+                      </div>
+                    </Form>
+                  )}
+                </Formik>
               </div>
             </div>
           </div>
@@ -703,6 +751,87 @@ const Product = () => {
       )}
 
       {showCreateProductsDialog && <div className="modal-backdrop show"></div>}
+
+      {imageSrc && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Crop Image</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setImageSrc(null);
+                    setSelectedImageIndex(null);
+                    setCroppedAreaPixels(null);
+                    setZoom(1);
+                    setCrop({ x: 0, y: 0 });
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div style={{ position: 'relative', height: '400px' }}>
+                  <Cropper
+                    image={imageSrc}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
+                </div>
+                <div className="mt-2">
+                  <label>Zoom</label>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="form-range"
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setImageSrc(null);
+                    setSelectedImageIndex(null);
+                    setCroppedAreaPixels(null);
+                    setZoom(1);
+                    setCrop({ x: 0, y: 0 });
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleCropComplete}
+                >
+                  Crop & Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
+
       <ToastContainer />
     </div>
   );

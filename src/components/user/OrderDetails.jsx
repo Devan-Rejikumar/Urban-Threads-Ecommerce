@@ -64,6 +64,9 @@ const OrderDetails = () => {
       toast.error(error.response?.data?.message || 'Failed to submit return request');
     }
   };
+  const canOrderBeCancelled = (order) => {
+    return order.status === 'pending' && order.paymentStatus !== 'failed';
+  };
 
   const handleCancelOrder = async () => {
     if (!orderCancelReason.trim()) {
@@ -72,18 +75,36 @@ const OrderDetails = () => {
     }
 
     try {
-      const response = await axiosInstance.post(`/orders/${orderId}/cancel`, {
-        reason: orderCancelReason
-      });
+     
+      if (order.paymentStatus === 'failed') {
+      
+        const response = await axiosInstance.post(`/orders/${orderId}/cancel`, {
+          reason: orderCancelReason,
+          isFailedPayment: true 
+        });
 
-      if (response.data.success) {
-        setOrder(response.data.order);
-        setShowOrderCancelDialog(false);
-        setOrderCancelReason('');
-        toast.success('Order cancelled successfully');
+        if (response.data.success) {
+          setOrder(response.data.order);
+          setShowOrderCancelDialog(false);
+          setOrderCancelReason('');
+          toast.success('Order cancelled successfully');
+          navigate('/profile/orders'); // Redirect to orders page
+        }
+      } else {
+        // Normal cancellation flow for paid orders
+        const response = await axiosInstance.post(`/orders/${orderId}/cancel`, {
+          reason: orderCancelReason
+        });
 
-        if (response.data.refundProcessed) {
-          toast.success(`Refund of ₹${response.data.order.refundAmount} has been credited to your wallet`);
+        if (response.data.success) {
+          setOrder(response.data.order);
+          setShowOrderCancelDialog(false);
+          setOrderCancelReason('');
+          toast.success('Order cancelled successfully');
+
+          if (response.data.refundProcessed) {
+            toast.success(`Refund of ₹${response.data.order.refundAmount} has been credited to your wallet`);
+          }
         }
       }
     } catch (error) {
@@ -232,6 +253,7 @@ const OrderDetails = () => {
     });
     setShowOrderCancelDialog(true);
   };
+  
 
   const isReturnEligible = (order) => {
     if (order.status !== 'delivered') return false;
@@ -280,6 +302,25 @@ const OrderDetails = () => {
       </div>
     );
   }
+  
+  const renderCancelModalContent = () => {
+    if (order.paymentStatus === 'failed') {
+      return (
+        <div className="alert alert-info">
+          <strong>Note:</strong> This order will be cancelled as no payment was processed.
+        </div>
+      );
+    }
+
+    return (
+      <div className="alert alert-warning">
+        <strong>Note:</strong> {' '}
+        {order?.paymentMethod === 'online' ?
+          'Refund will be credited to your wallet.' :
+          'No refund will be processed for COD orders.'}
+      </div>
+    );
+  };
 
   const renderOrderItem = (item) => {
     if (!item.productId) return null;
@@ -352,17 +393,19 @@ const OrderDetails = () => {
             <div className="d-flex justify-content-between align-items-center">
               <h4 className="mb-0">Order #{order.orderId}</h4>
               <div className="d-flex gap-2">
-                <span className={`badge ${order.status === 'delivered' ? 'bg-success' : 'bg-warning'}`}>
+                {/* <span className={`badge ${order.status === 'delivered' ? 'bg-success' : 'bg-warning'}`}>
                   {order.status.toUpperCase()}
-                </span>
-                {order.paymentStatus === 'failed' && (
+                </span> */}
+                {order.paymentStatus === 'failed' ? (
                   <span className="badge bg-danger">
                     Payment Failed
                   </span>
-                )}
+                ) : (<span className={`badge ${order.status === 'delivered' ? 'bg-success' : 'bg-warning'}`}>
+                  {order.status.toUpperCase()}
+                </span>)}
                 {order.status === 'returned' && (
                   <span className="badge bg-info">
-                    RETURNED
+                   Returned
                   </span>
                 )}
               </div>
@@ -402,7 +445,7 @@ const OrderDetails = () => {
               {downloadingInvoice ? 'Downloading...' : 'Download Invoice'}
             </button>
           )}
-          {order.status === 'pending' && (
+          {canOrderBeCancelled(order) && order.paymentStatus !== 'failed' && (
             <button
               className="btn btn-danger"
               onClick={() => setShowOrderCancelDialog(true)}
@@ -462,12 +505,7 @@ const OrderDetails = () => {
                 }}></button>
             </div>
             <div className="modal-body">
-              <div className="alert alert-warning">
-                <strong>Note:</strong> {' '}
-                {order?.paymentMethod === 'online' ?
-                  'Refund will be credited to your wallet.' :
-                  'No refund will be processed for COD orders.'}
-              </div>
+              {renderCancelModalContent()}
               <div className="form-group">
                 <label>Please provide a reason for cancellation:</label>
                 <textarea

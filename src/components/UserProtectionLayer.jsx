@@ -1,26 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstances from '../utils/axiosInstance';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 const UserProtectionLayer = ({ children }) => {
     const [isVerified, setIsVerified] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const verifyToken = async () => {
-            console.log('gdusgyuhgsay')
             try {
-                const response = await axiosInstances.get('/auth/verify-token');
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    navigate('/login', {state : {from : location.pathname}});
+                    return;
+                }
+                const response = await axiosInstances.get('/auth/verify-token-status');
+                
                 if (response.status === 200) {
-                    console.log('Token verification successful');
-                    // setIsVerified(true);
+                    setIsVerified(true);
                 } else {
-                    console.log('Token verification failed');
+                    localStorage.clear();
                     navigate('/login');
                 }
             } catch (error) {
-                console.log('Token verification error:', error);
+                // Handle blocked status specifically
+                if (error.response?.status === 403) {
+                    localStorage.clear();
+                    navigate('/login', { 
+                        state: { 
+                            message: 'Your account has been blocked. Please contact support.' 
+                        }
+                    });
+                    return;
+                }
+                
+                localStorage.clear();
                 navigate('/login');
             } finally {
                 setIsLoading(false);
@@ -33,10 +49,9 @@ const UserProtectionLayer = ({ children }) => {
     if (isLoading) {
         return <div>Loading...</div>; 
     }
-
-    // if (!isVerified) {
-    //     return <Navigate to="/login" replace />;
-    // }
+    if (!isVerified) {
+        return null; 
+    }
 
     return children;
 };

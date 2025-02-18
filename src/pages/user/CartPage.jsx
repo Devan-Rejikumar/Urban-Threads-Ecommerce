@@ -5,6 +5,7 @@ import { updateQuantity, removeFromCart, setCart } from '../../redux/slices/cart
 import axiosInstance from '../../utils/axiosInstance';
 import Footer from '../../components/user/Footer';
 import Header from '../../components/user/Header';
+import Breadcrumbs from '../../components/BreadCrumps.jsx';
 
 const CartPage = () => {
   const dispatch = useDispatch();
@@ -69,6 +70,7 @@ const CartPage = () => {
   return (
     <>
     <Header />
+    <Breadcrumbs />
       <div className="container py-5">
         <h1 className="mb-4">Shopping Cart</h1>
         {cartItems.length === 0 ? (

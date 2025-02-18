@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -92,16 +90,13 @@ const Category = () => {
   };
   const handleDelete = async (item) => {
     try {
-      await axios.put(
+      await axios.delete(
         `http://localhost:5000/api/categories/${item._id}`,
-        { isDeleted: true },
         { withCredentials: true }
       );
-      setCategories(categories.map(cat =>
-        cat._id === item._id
-          ? { ...cat, isDeleted: true }
-          : cat
-      ));
+      
+      // Remove the category from the state
+      setCategories(categories.filter(cat => cat._id !== item._id));
       toast.success('Category deleted successfully');
     } catch (error) {
       console.error("Error deleting category:", error);

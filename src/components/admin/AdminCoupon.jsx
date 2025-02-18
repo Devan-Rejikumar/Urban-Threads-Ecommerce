@@ -1,166 +1,12 @@
-// import React, { useState, useEffect } from 'react';
-// import { useDispatch, useSelector } from 'react-redux';
-// import axios from 'axios';
-// import { setCoupons, setLoading, setError } from '../../redux/slices/couponSlice';
-
-// const AdminCoupon = () => {
-//   const dispatch = useDispatch();
-//   const { coupons, loading } = useSelector(state => state.coupon);
-//   const [activeTab, setActiveTab] = useState('list');
-//   const [formData, setFormData] = useState({
-//     code: '',
-//     discountType: 'percentage',
-//     discountAmount: '',
-//     minimumPurchase: '',
-//     maxDiscount: '',
-//     startDate: '',
-//     endDate: '',
-//     maxUses: ''
-//   });
-
-//   useEffect(() => {
-//     fetchCoupons();
-//   }, [dispatch]);
-
-//   const fetchCoupons = async () => {
-//     try {
-//       dispatch(setLoading());
-//       const response = await axios.get('http://localhost:5000/api/admin/coupons', { withCredentials: true });
-//       dispatch(setCoupons(response.data.coupons));
-//     } catch (error) {
-//       dispatch(setError(error.message));
-//     }
-//   };
-
-//   const handleDelete = async (id) => {
-//     try {
-//       await axios.delete(`http://localhost:5000/api/admin/coupons/${id}`, { withCredentials: true });
-//       fetchCoupons();
-//     } catch (error) {
-//       dispatch(setError(error.message));
-//     }
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       await axios.post('http://localhost:5000/api/admin/coupons', formData, { withCredentials: true });
-//       setFormData({
-//         code: '',
-//         discountType: 'percentage',
-//         discountAmount: '',
-//         minimumPurchase: '',
-//         maxDiscount: '',
-//         startDate: '',
-//         endDate: '',
-//         maxUses: ''
-//       });
-//       fetchCoupons();
-//       setActiveTab('list');
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   };
-
-//   if (loading) return <div>Loading...</div>;
-
-//   return (
-//     <div className="p-4">
-//       <div className="flex gap-4 mb-4">
-//         <button 
-//           onClick={() => setActiveTab('list')}
-//           className={`px-4 py-2 ${activeTab === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-//         >
-//           Coupon List
-//         </button>
-//         <button 
-//           onClick={() => setActiveTab('create')}
-//           className={`px-4 py-2 ${activeTab === 'create' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-//         >
-//           Create Coupon
-//         </button>
-//       </div>
-
-//       {activeTab === 'list' ? (
-//         <div className="grid gap-4">
-//           {coupons.map(coupon => (
-//             <div key={coupon._id} className="border p-4 rounded flex justify-between items-center">
-//               <div>
-//                 <h3 className="font-bold">{coupon.code}</h3>
-//                 <p>{coupon.discountType === 'percentage' ? `${coupon.discountAmount}%` : `₹${coupon.discountAmount}`}</p>
-//                 <p>Valid till: {new Date(coupon.endDate).toLocaleDateString()}</p>
-//               </div>
-//               <button 
-//                 onClick={() => handleDelete(coupon._id)} 
-//                 className="bg-red-500 text-white px-4 py-2 rounded"
-//               >
-//                 Delete
-//               </button>
-//             </div>
-//           ))}
-//         </div>
-//       ) : (
-//         <form onSubmit={handleSubmit} className="grid gap-4 max-w-md">
-//           <input
-//             type="text"
-//             placeholder="Coupon Code"
-//             value={formData.code}
-//             onChange={(e) => setFormData({...formData, code: e.target.value})}
-//             className="border p-2 rounded"
-//           />
-//           <select
-//             value={formData.discountType}
-//             onChange={(e) => setFormData({...formData, discountType: e.target.value})}
-//             className="border p-2 rounded"
-//           >
-//             <option value="percentage">Percentage</option>
-//             <option value="fixed">Fixed Amount</option>
-//           </select>
-//           <input
-//             type="number"
-//             placeholder="Discount Amount"
-//             value={formData.discountAmount}
-//             onChange={(e) => setFormData({...formData, discountAmount: e.target.value})}
-//             className="border p-2 rounded"
-//           />
-//           <input
-//             type="number"
-//             placeholder="Minimum Purchase"
-//             value={formData.minimumPurchase}
-//             onChange={(e) => setFormData({...formData, minimumPurchase: e.target.value})}
-//             className="border p-2 rounded"
-//           />
-//           <input
-//             type="date"
-//             placeholder="Start Date"
-//             value={formData.startDate}
-//             onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-//             className="border p-2 rounded"
-//           />
-//           <input
-//             type="date"
-//             placeholder="End Date"
-//             value={formData.endDate}
-//             onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-//             className="border p-2 rounded"
-//           />
-//           <button type="submit" className="bg-blue-500 text-white p-2 rounded">
-//             Create Coupon
-//           </button>
-//         </form>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AdminCoupon;
-
 import React, { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import axios from "axios"
 import { setCoupons, setLoading, setError } from "../../redux/slices/couponSlice"
 import "bootstrap/dist/css/bootstrap.min.css"
 import "./AdminCoupon.css"
+import { Breadcrumb } from 'react-bootstrap';
+import Swal from "sweetalert2"
+
 
 const AdminCoupon = () => {
   const dispatch = useDispatch()
@@ -176,10 +22,47 @@ const AdminCoupon = () => {
     endDate: "",
     maxUses: "",
   })
+  const [validationErrors, setValidationErrors] = useState({})
 
   useEffect(() => {
     fetchCoupons()
   }, [])
+
+  const validateForm = () => {
+    const errors = {}
+    
+    // Coupon code validation (6-7 characters, letters and digits only)
+    if (!/^[A-Za-z0-9]{6,7}$/.test(formData.code)) {
+      errors.code = "Coupon code must be 6-7 characters long and contain only letters and numbers"
+    }
+
+    // Date validations
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+
+    if (startDate < today) {
+      errors.startDate = "Start date cannot be in the past"
+    }
+
+    if (endDate <= startDate) {
+      errors.endDate = "End date must be after start date"
+    }
+
+    // Discount amount validation
+    if (Number(formData.discountAmount) <= 0) {
+      errors.discountAmount = "Discount amount must be greater than 0"
+    }
+
+    if (formData.discountType === "percentage" && Number(formData.discountAmount) > 99) {
+      errors.discountAmount = "Percentage discount cannot exceed 100%"
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const fetchCoupons = async () => {
     try {
@@ -191,17 +74,54 @@ const AdminCoupon = () => {
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, code) => {
     try {
-      await axios.delete(`http://localhost:5000/api/admin/coupons/${id}`, { withCredentials: true })
-      fetchCoupons()
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `You are about to delete coupon ${code}. This action cannot be undone!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      // If user confirms deletion
+      if (result.isConfirmed) {
+        await axios.delete(`http://localhost:5000/api/admin/coupons/${id}`, { withCredentials: true })
+        
+        // Show success message
+        await Swal.fire({
+          title: 'Deleted!',
+          text: `Coupon ${code} has been deleted successfully.`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        // Refresh coupon list
+        fetchCoupons()
+      }
     } catch (error) {
+      // Show error message
+      Swal.fire({
+        title: 'Error!',
+        text: `Failed to delete coupon: ${error.message}`,
+        icon: 'error',
+        confirmButtonColor: '#3085d6'
+      });
       dispatch(setError(error.message))
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateForm()) {
+      return
+    }
+    
     try {
       await axios.post("http://localhost:5000/api/admin/coupons", formData, { withCredentials: true })
       setFormData({
@@ -214,6 +134,7 @@ const AdminCoupon = () => {
         endDate: "",
         maxUses: "",
       })
+      setValidationErrors({})
       fetchCoupons()
       setActiveTab("list")
     } catch (error) {
@@ -232,6 +153,10 @@ const AdminCoupon = () => {
 
   return (
     <div className="container mt-4">
+      <Breadcrumb className="mt-3">
+        <Breadcrumb.Item href="/admin-dashboard">Dashboard</Breadcrumb.Item>
+        <Breadcrumb.Item active>Coupons</Breadcrumb.Item>
+      </Breadcrumb>
       <div className="row mb-4">
         <div className="col">
           <ul className="nav nav-tabs">
@@ -270,7 +195,7 @@ const AdminCoupon = () => {
                   </p>
                 </div>
                 <div className="card-footer">
-                  <button onClick={() => handleDelete(coupon._id)} className="btn btn-danger w-100">
+                  <button onClick={() => handleDelete(coupon._id, coupon.code)} className="btn btn-danger w-100">
                     Delete
                   </button>
                 </div>
@@ -289,12 +214,15 @@ const AdminCoupon = () => {
                 <input
                   type="text"
                   id="code"
-                  placeholder="Coupon Code"
+                  placeholder="Coupon Code (6-7 characters, letters and numbers only)"
                   value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="form-control"
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                  className={`form-control ${validationErrors.code ? 'is-invalid' : ''}`}
                   required
                 />
+                {validationErrors.code && (
+                  <div className="invalid-feedback">{validationErrors.code}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="discountType" className="form-label">
@@ -320,9 +248,14 @@ const AdminCoupon = () => {
                   placeholder="Discount Amount"
                   value={formData.discountAmount}
                   onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
-                  className="form-control"
+                  className={`form-control ${validationErrors.discountAmount ? 'is-invalid' : ''}`}
+                  min="0"
+                  step="0.01"
                   required
                 />
+                {validationErrors.discountAmount && (
+                  <div className="invalid-feedback">{validationErrors.discountAmount}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="minimumPurchase" className="form-label">
@@ -335,6 +268,7 @@ const AdminCoupon = () => {
                   value={formData.minimumPurchase}
                   onChange={(e) => setFormData({ ...formData, minimumPurchase: e.target.value })}
                   className="form-control"
+                  min="0"
                 />
               </div>
               <div className="mb-3">
@@ -346,9 +280,12 @@ const AdminCoupon = () => {
                   id="startDate"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="form-control"
+                  className={`form-control ${validationErrors.startDate ? 'is-invalid' : ''}`}
                   required
                 />
+                {validationErrors.startDate && (
+                  <div className="invalid-feedback">{validationErrors.startDate}</div>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="endDate" className="form-label">
@@ -359,9 +296,12 @@ const AdminCoupon = () => {
                   id="endDate"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="form-control"
+                  className={`form-control ${validationErrors.endDate ? 'is-invalid' : ''}`}
                   required
                 />
+                {validationErrors.endDate && (
+                  <div className="invalid-feedback">{validationErrors.endDate}</div>
+                )}
               </div>
               <button type="submit" className="btn btn-primary w-100">
                 Create Coupon
@@ -375,4 +315,3 @@ const AdminCoupon = () => {
 }
 
 export default AdminCoupon
-

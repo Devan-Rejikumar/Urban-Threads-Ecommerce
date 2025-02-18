@@ -4,6 +4,8 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import Swal from 'sweetalert2';
+import {Breadcrumb} from 'react-bootstrap';
 
 const OfferList = () => {
     const [offers, setOffers] = useState([]);
@@ -17,13 +19,10 @@ const OfferList = () => {
     const fetchOffers = async () => {
         try {
             const response = await axios.get('http://localhost:5000/api/admin/offers', {
-                withCredentials : true,
-             
+                withCredentials: true,
             });
-            if(response.status === 200){
-                console.log("rrrrrrrrrrrrrr",response)
-            setOffers(response.data.offers);
-            console.log('jjjjjjjjjjjjjjjjjjjjjj',response.data.offers)
+            if(response.status === 200) {
+                setOffers(response.data.offers);
             }
         } catch (error) {
             console.error('Error fetching offers:', error);
@@ -33,15 +32,39 @@ const OfferList = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Delete this offer?')) return;
-        
+    const handleDelete = async (id, offerName) => {
         try {
-            await axiosInstance.delete(`/admin/offers/${id}`);
-            toast.success('Offer deleted');
-            fetchOffers();
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete the offer "${offerName}". This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (result.isConfirmed) {
+                await axiosInstance.delete(`/admin/offers/${id}`);
+                
+                await Swal.fire({
+                    title: 'Deleted!',
+                    text: `Offer "${offerName}" has been deleted successfully.`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                fetchOffers();
+            }
         } catch (error) {
-            toast.error('Delete failed');
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to delete the offer. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#3085d6'
+            });
         }
     };
 
@@ -49,6 +72,10 @@ const OfferList = () => {
 
     return (
         <div className="container mt-4">
+            <Breadcrumb className="mt-3">
+                <Breadcrumb.Item href="/admin-dashboard">Dashboard</Breadcrumb.Item>
+                <Breadcrumb.Item active>Offers</Breadcrumb.Item>
+            </Breadcrumb>
             <div className="d-flex justify-content-between mb-4">
                 <h2>Offers</h2>
                 <button 
@@ -66,8 +93,6 @@ const OfferList = () => {
                             <th>Name</th>
                             <th>Type</th>
                             <th>Discount</th>
-                           
-                            {/* <th>Status</th> */}
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -80,12 +105,6 @@ const OfferList = () => {
                                     {offer.discountValue}
                                     {offer.discountType === 'percentage' ? '%' : ''}
                                 </td>
-{/*                             
-                                <td>
-                                    <span className={`badge ${offer.isActive ? 'bg-success' : 'bg-danger'}`}>
-                                        {offer.isActive ? 'Active' : 'Inactive'}
-                                    </span>
-                                </td> */}
                                 <td>
                                     <button
                                         className="btn btn-sm btn-outline-primary me-2"
@@ -95,7 +114,7 @@ const OfferList = () => {
                                     </button>
                                     <button
                                         className="btn btn-sm btn-outline-danger"
-                                        onClick={() => handleDelete(offer._id)}
+                                        onClick={() => handleDelete(offer._id, offer.name)}
                                     >
                                         <Trash2 size={16} />
                                     </button>

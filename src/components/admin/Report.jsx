@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { FaFileExcel, FaFilePdf } from 'react-icons/fa';
 import { ORDER_STATUS_UPDATED, orderEventEmitter } from '../../utils/orderEvents.js';
+import {Breadcrumb} from 'react-bootstrap';
 
 
 const adminAxios = axios.create({
@@ -266,12 +267,11 @@ const SalesReport = () => {
                 responseType: 'blob'
             });
     
-            // Check if the response is empty
             if (response.data.size === 0) {
                 throw new Error('Empty report received');
             }
     
-            // Create download link
+        
             const blob = new Blob([response.data], {
                 type: format === 'xlsx' 
                     ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -282,11 +282,11 @@ const SalesReport = () => {
             link.href = url;
             link.setAttribute('download', `sales-report-${startDate}-to-${endDate}.${format}`);
             
-            // Trigger download
+          
             document.body.appendChild(link);
             link.click();
             
-            // Cleanup
+      
             window.URL.revokeObjectURL(url);
             link.remove();
         } catch (error) {
@@ -299,6 +299,10 @@ const SalesReport = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
+            <Breadcrumb className="mt-3 text-black">
+                <Breadcrumb.Item  href="/admin-dashboard">Dashboard</Breadcrumb.Item>
+                <Breadcrumb.Item active>Sales Report</Breadcrumb.Item>
+            </Breadcrumb>
             <div className="card shadow-sm mb-4">
                 <div className="card-body">
                     <div className="row align-items-end mb-4">

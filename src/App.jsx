@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Home from './pages/user/home.jsx'
 import AuthForm from '../src/components/AuthForm.jsx';
 import OTPVerification from './components/user/otp.jsx';
@@ -37,17 +37,21 @@ import SalesReport from './components/admin/Report.jsx';
 import Dashboard from './components/admin/Dashboard.jsx';
 import PageNotFound from './pages/user/PageNotFound.jsx'
 import AboutPage from './pages/user/About.jsx';
+import ContactPage from './pages/user/ContactPage.jsx';
+import ResetPassword from './components/admin/ResetPassword.jsx';
+
+
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<UserProtectionLayer><Home /></UserProtectionLayer>} />
-        <Route path="/category/:categoryId" element={<CategoryProducts />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/category/:categoryId" element={<UserProtectionLayer><CategoryProducts /></UserProtectionLayer>} />
         <Route path="/product/:productId" element={<ProductDetail />} />
-        <Route path='/profile/details' element={<UserDetails />} />
-        <Route path="/profile/address" element={<AddressManagement />} />
-        <Route path="/shop" element={<Shop />} />
+        <Route path='/profile/details' element={<UserProtectionLayer><UserDetails /></UserProtectionLayer>} />
+        <Route path="/profile/address" element={<UserProtectionLayer><AddressManagement /></UserProtectionLayer>} />
+        <Route path="/shop" element={<UserProtectionLayer><Shop /></UserProtectionLayer>} />
         <Route
           path="/login"
           element={
@@ -76,6 +80,7 @@ function App() {
         <Route path="/profile/orders/:orderId" element={<OrderDetails />} />
         <Route path="/profile/wallet" element={<WalletView />} />
         <Route path='/about' element = {<AboutPage />} />
+        <Route path='/contact' element = {<ContactPage />} />
 
         <Route
           path="/admin-login"
@@ -97,10 +102,8 @@ function App() {
           <Route path="offers/create" element={<CreateOffer />} />
           <Route path="offers/edit/:id" element={<EditOffer />} />
           <Route path="sales-report" element={<SalesReport />} />
-      
+          <Route path="reset-password" element={<ResetPassword />} />
         </Route>
-
-        {/* <Route path="*" element={<Navigate to="/" replace />} /> */}/
         <Route path='*' element={<PageNotFound />} />
       </Routes>
     </Router>

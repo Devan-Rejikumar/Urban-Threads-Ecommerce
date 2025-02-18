@@ -10,6 +10,9 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
 import { loadScript } from '../../utils/razorpay.js';
+import Breadcrumbs from '../../components/BreadCrumps.jsx';
+import * as Yup from 'yup';
+import { useFormik } from 'formik';
 
 
 const AddressCard = ({ address, onSelect, isSelected, onEdit }) => (
@@ -167,7 +170,7 @@ const Checkout = () => {
     const fetchCoupons = async () => {
         try {
             const token = localStorage.getItem('token');
-            console.log('dfghjkl;lkjhgfdToken', token);
+            
 
             if (!token) {
                 throw new Error('No authentication token found');
@@ -404,7 +407,6 @@ const Checkout = () => {
 
             };
 
-            console.log('Order Payloadwwwwwwwww:', orderPayload); // Log the payload
 
             if (selectedPayment === 'wallet') {
                 const walletResponse = await axiosInstance.post('/wallet/debit', {
@@ -580,7 +582,7 @@ const Checkout = () => {
     return (
         <>
             <Header />
-
+            <Breadcrumbs />
             <ToastContainer
                 position="top-right"
                 autoClose={3000}

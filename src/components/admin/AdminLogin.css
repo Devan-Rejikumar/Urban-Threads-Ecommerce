@@ -156,6 +156,73 @@
   .login-button:hover {
     background-color: #059669;
   }
+  /* Add these new styles to your existing AdminLogin.css */
+
+.success-message {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.back-button {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #4285f4;
+  background: transparent;
+  color: #4285f4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(66, 133, 244, 0.1);
+}
+
+.login-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.forgot-password {
+  background: none;
+  border: none;
+  color: #4285f4;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+/* Ensure smooth transitions between forms */
+.login-form {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
   
 
   @media (max-width: 480px) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../utils/axiosInstance';
-import { Search, Filter, ShoppingBag, Truck, Package, CheckCircle, MoreHorizontal,XCircle } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Truck, Package, CheckCircle, MoreHorizontal, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { loadScript } from '../../utils/razorpay'
@@ -12,27 +12,41 @@ const statusIcons = {
     shipped: <Truck className="text-primary" />,
     pending: <Package className="text-warning" />,
     failed: <XCircle className="text-danger" />,
+    payment_failed: <XCircle className="text-danger" /> 
+};
+
+const getStatusBadgeClass = (status) => {
+    switch (status) {
+        case 'delivered':
+            return 'bg-success';
+        case 'payment_failed':
+            return 'bg-danger';
+        case 'pending':
+            return 'bg-warning';
+        case 'shipped':
+            return 'bg-primary';
+        default:
+            return 'bg-light text-dark';
+    }
 };
 
 const OrderCard = ({ order, onRetryPayment }) => {
     const navigate = useNavigate();
-    
+
+   
+
     return (
         <div className="card h-100 shadow-sm">
             <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="card-title mb-0">Order #{order.orderId}</h5>
                     <div>
-                        <span className={`badge ${order.status === 'delivered' ? 'bg-success' : 'bg-light text-dark'} me-2`}>
-                            {statusIcons[order.status]}
-                            <span className="ms-2">{order.status}</span>
-                        </span>
-                        {order.paymentStatus === 'failed' && (
-                            <span className="badge bg-danger">
-                                <XCircle size={14} className="me-1" />
-                                Payment Failed
+                        <span className={`badge ${getStatusBadgeClass(order.status)} me-2`}>
+                            {statusIcons[order.paymentStatus === 'failed' ? 'payment_failed' : order.status]}
+                            <span className="ms-2">
+                                {order.paymentStatus === 'failed' ? 'Payment Failed' : order.status}
                             </span>
-                        )}
+                        </span>
                     </div>
                 </div>
                 <div className="card-text">
@@ -81,7 +95,7 @@ export default function OrdersPage() {
     const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(false);
 
- 
+
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchOrders(1);
@@ -122,7 +136,7 @@ export default function OrdersPage() {
                 const response = await axiosInstance.post(`/orders/${orderId}/cancel`);
                 if (response.data.success) {
                     toast.success('Order cancelled successfully');
-                    fetchOrders(currentPage); 
+                    fetchOrders(currentPage);
                 }
             } catch (error) {
                 console.error('Error cancelling order:', error);
@@ -134,7 +148,7 @@ export default function OrdersPage() {
     const handleRetryPayment = async (order) => {
         try {
             const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
-            
+
             if (!res) {
                 toast.error('Razorpay SDK failed to load');
                 return;
@@ -192,7 +206,7 @@ export default function OrdersPage() {
 
     return (
         <>
-        <Header />
+            <Header />
             <div className="container-fluid mt-4">
                 <h1 className="mb-4 display-4 text-center">Order History</h1>
                 <div className="row mb-4">
@@ -224,7 +238,7 @@ export default function OrdersPage() {
                                 <option value="delivered">Delivered</option>
                                 <option value="shipped">Shipped</option>
                                 <option value="pending">Pending</option>
-                                <option value='payment_failed'>Failed</option>
+                                <option value='payment_failed'>Payment Failed</option>
                             </select>
                         </div>
                     </div>
@@ -244,9 +258,11 @@ export default function OrdersPage() {
                                     <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-center mb-3">
                                             <h5 className="card-title mb-0">Order #{order.orderId}</h5>
-                                            <span className="badge bg-light text-dark">
-                                                {statusIcons[order.status]}
-                                                <span className="ms-2">{order.status}</span>
+                                            <span className={`badge ${getStatusBadgeClass(order.status)} me-2`}>
+                                                {statusIcons[order.paymentStatus === 'failed' ? 'payment_failed' : order.status]}
+                                                <span className="ms-2">
+                                                    {order.paymentStatus === 'failed' ? 'Payment Failed' : order.status}
+                                                </span>
                                             </span>
                                         </div>
                                         <div className="card-text">

@@ -1,21 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { updateQuantity, removeFromCart, setCart } from '../../redux/slices/cartSlice';
 import axiosInstance from '../../utils/axiosInstance';
-import Footer from '../../components/user/Footer';
-import Header from '../../components/user/Header';
 
 const Cart = ({ show, onHide }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart.items);
+  const [alert, setAlert] = useState(null);
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
         const response = await axiosInstance.get('/cart');
-
         const cartItems = response.data.items.map(item => ({
           productId: item.productId._id,
           name: item.productId.name,
@@ -30,7 +28,6 @@ const Cart = ({ show, onHide }) => {
       } catch (error) {
         console.error('Error fetching cart:', error);
         if (error.response?.status === 401) {
-
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
@@ -42,7 +39,9 @@ const Cart = ({ show, onHide }) => {
     }
   }, [dispatch, show]);
 
-  const cartTotal = cartItems.reduce((total, item) => total + (Math.round(item.price * item.quantity)), 0);
+  const subtotal = cartItems.reduce((total, item) => total + (Math.round(item.price * item.quantity)), 0);
+  const shippingCost = subtotal >= 1200 ? 0 : 100;
+  const cartTotal = subtotal + shippingCost;
 
   const handleQuantityChange = async (productId, selectedSize, newQty, stock, maxPerPerson) => {
     if (newQty >= 1 && newQty <= stock && newQty <= maxPerPerson) {
@@ -53,9 +52,18 @@ const Cart = ({ show, onHide }) => {
           quantity: newQty
         });
         dispatch(updateQuantity({ productId, selectedSize, quantity: newQty }));
+        
+        // Show alert when max quantity is reached
+        if (newQty === maxPerPerson) {
+          setAlert({
+            message: `Maximum limit of ${maxPerPerson} items reached for this product`,
+            type: 'warning'
+          });
+          // Clear alert after 3 seconds
+          setTimeout(() => setAlert(null), 3000);
+        }
       } catch (error) {
         console.error('Failed to update quantity:', error);
-
       }
     }
   };
@@ -66,7 +74,6 @@ const Cart = ({ show, onHide }) => {
       dispatch(removeFromCart({ productId, selectedSize }));
     } catch (error) {
       console.error('Failed to remove item:', error);
-
     }
   };
 
@@ -84,19 +91,23 @@ const Cart = ({ show, onHide }) => {
 
   return (
     <>
-    {/* <Header /> */}
       <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <div className="modal-dialog modal-dialog-scrollable modal-dialog-end"
           style={{ margin: '0 0 0 auto', height: '100vh', maxWidth: '400px' }}>
           <div className="modal-content h-100">
-
             <div className="modal-header">
               <h5 className="modal-title">Shopping Cart ({cartItems.length})</h5>
               <button type="button" className="btn-close" onClick={onHide}></button>
             </div>
 
-
             <div className="modal-body">
+              {alert && (
+                <div className={`alert alert-${alert.type} alert-dismissible fade show`} role="alert">
+                  {alert.message}
+                  <button type="button" className="btn-close" onClick={() => setAlert(null)}></button>
+                </div>
+              )}
+              
               {cartItems.length === 0 ? (
                 <div className="text-center py-5">
                   <p className="text-muted">Your cart is empty</p>
@@ -165,6 +176,11 @@ const Cart = ({ show, onHide }) => {
                                 Only {item.stock} left!
                               </span>
                             )}
+                            {item.quantity === item.maxPerPerson && (
+                              <span className="badge bg-warning text-dark ms-2">
+                                Max limit reached
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -174,18 +190,28 @@ const Cart = ({ show, onHide }) => {
               )}
             </div>
 
-
             {cartItems.length > 0 && (
               <div className="modal-footer flex-column">
                 <div className="w-100">
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted">Subtotal</span>
-                    <span>₹{Math.round(cartTotal)}</span>
+                    <span>₹{Math.round(subtotal)}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted">Shipping</span>
-                    <span>FREE</span>
+                    <span>
+                      {shippingCost === 0 ? (
+                        <span className="text-success">FREE</span>
+                      ) : (
+                        <span>₹{shippingCost}</span>
+                      )}
+                    </span>
                   </div>
+                  {subtotal < 1200 && (
+                    <div className="text-muted small mb-2">
+                      Add ₹{1200 - subtotal} more to get free shipping!
+                    </div>
+                  )}
                   <div className="d-flex justify-content-between fw-bold">
                     <span>Total</span>
                     <span>₹{Math.round(cartTotal)}</span>
@@ -210,9 +236,7 @@ const Cart = ({ show, onHide }) => {
           </div>
         </div>
       </div>
-      {/* <Footer /> */}
     </>
-
   );
 };
 

@@ -10,13 +10,34 @@ import * as Yup from 'yup';
 
 const AddressForm = ({ initialData, onSubmit, onCancel }) => {
     const validationSchema = Yup.object({
-        firstName: Yup.string().required('First Name is required'),
-        lastName : Yup.string().required('Last Name is required'),
-        phoneNumber : Yup.string().required('Phone Number is required').matches(/^[0-9]{10}$/, "Phone Number must be 10 digits"),
-         streetAddress : Yup.string().required('Street Address is required'),
-         city : Yup.string().required('City is required'),
-         state : Yup.string().required('State is required'),
-         pincode : Yup.string().required('Pincode is required').matches(/^[0-9]{6}$/,"Pincode must be 6 digits"),
+        firstName: Yup.string().required('First Name is required')
+        .min(2, 'First Name must be at least 2 characters')
+        .matches(/^[a-zA-Z\s]+$/, 'First Name should only contain letters'),
+        lastName : Yup.string().required('Last Name is required')
+        .min(2, 'Last Name must be at least 2 characters')
+        .matches(/^[a-zA-Z\s]+$/, 'Last Name should only contain letters'),
+        phoneNumber : Yup.string().required('Phone Number is required')
+        .matches(/^[6-9]\d{9}$/, 'Phone number must start with 6-9 and be 10 digits')
+        .test('no-repeated', 'Phone number cannot have excessive repeated digits', value => {
+            if (!value) return true;
+            // Check for more than 8 repeated digits
+            return !/(.)\1{7,}/.test(value);
+        })
+        .test('no-sequential', 'Phone number cannot be sequential', value => {
+            if (!value) return true;
+            const sequential = "0123456789";
+            const reverseSequential = "9876543210";
+            return !sequential.includes(value) && !reverseSequential.includes(value);
+        }),
+         streetAddress : Yup.string().required('Street Address is required')
+         .min(5, 'Street Address must be at least 5 characters'),
+         city : Yup.string() .required('City is required')
+         .matches(/^[a-zA-Z\s]+$/, 'City should only contain letters'),
+         state : Yup.string().required('State is required')
+         .matches(/^[a-zA-Z\s]+$/, 'State should only contain letters'),
+         pincode : Yup.string().required('Pincode is required')
+         .matches(/^[1-9][0-9]{5}$/, 'Pincode must be 6 digits and cannot start with 0'),
+         
          isDefault : Yup.boolean(),
     })
 
@@ -43,47 +64,45 @@ const AddressForm = ({ initialData, onSubmit, onCancel }) => {
         }
     }, [initialData]);
 
-    // const handleSubmit = (e) => {
-    //     e.preventDefault();
-    //     onSubmit(formData);
-    // };
-
+    const handlePhoneChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        formik.setFieldValue('phoneNumber', value);
+    };
     return (
         <form onSubmit={formik.handleSubmit}>
-            <div className="row mb-3">
-                <div className="col-md-6">
-                    <label htmlFor="firstName" className="form-label">First Name</label>
-                    <input
-                        type="text"
-                        className={`form-control ${formik.touched.firstName && formik.errors.firstName ? 'is-invalid' : ''}`}
-                        id="firstName"
-                        name="firstName"
-                        value={formik.values.firstName}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        required
-                    />
-                    {formik.touched.firstName && formik.errors.firstName ? (
-                        <div className="invalid-feedback">{formik.errors.firstName}</div>
-                    ) : null}
-                </div>
-                <div className="col-md-6">
-                    <label htmlFor="lastName" className="form-label">Last Name</label>
-                    <input
-                        type="text"
-                        className={`form-control ${formik.touched.lastName && formik.errors.lastName ? 'is-invalid' : ''}`}
-                        id="lastName"
-                        name="lastName"
-                        value={formik.values.lastName}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        required
-                    />
-                    {formik.touched.lastName && formik.errors.lastName ? (
-                        <div className="invalid-feedback">{formik.errors.lastName}</div>
-                    ) : null}
-                </div>
+        <div className="row mb-3">
+            <div className="col-md-6">
+                <label htmlFor="firstName" className="form-label">First Name</label>
+                <input
+                    type="text"
+                    className={`form-control ${formik.touched.firstName && formik.errors.firstName ? 'is-invalid' : ''}`}
+                    id="firstName"
+                    name="firstName"
+                    value={formik.values.firstName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                />
+                {formik.touched.firstName && formik.errors.firstName ? (
+                    <div className="invalid-feedback">{formik.errors.firstName}</div>
+                ) : null}
             </div>
+            <div className="col-md-6">
+                <label htmlFor="lastName" className="form-label">Last Name</label>
+                <input
+                    type="text"
+                    className={`form-control ${formik.touched.lastName && formik.errors.lastName ? 'is-invalid' : ''}`}
+                    id="lastName"
+                    name="lastName"
+                    value={formik.values.lastName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                />
+                {formik.touched.lastName && formik.errors.lastName ? (
+                    <div className="invalid-feedback">{formik.errors.lastName}</div>
+                ) : null}
+            </div>
+        </div>
+        
             <div className="mb-3">
                 <label htmlFor="phoneNumber" className="form-label">Phone Number</label>
                 <input

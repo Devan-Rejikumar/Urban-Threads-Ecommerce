@@ -42,12 +42,12 @@ const MiniCart = () => {
 
   useEffect(() => {
     refreshCart();
-}, [dispatch]);
+  }, [dispatch]);
 
   const handleQuantityChange = async (productId, selectedSize, currentQuantity, change) => {
     const newQuantity = currentQuantity + change;
     const item = items.find((item) => item.productId === productId);
-    
+
     if (item && newQuantity >= 1 && newQuantity <= item.stock && newQuantity <= item.maxPerPerson) {
       try {
         await axiosInstance.put('/cart/update-quantity', {
@@ -74,26 +74,33 @@ const MiniCart = () => {
   const refreshCart = async () => {
     try {
         const response = await axiosInstance.get('/cart');
-        const cartItems = response.data.items.map(item => ({
-            productId: item.productId._id,
-            name: item.productId.name,
-            price: item.price,
-            selectedSize: item.selectedSize,
-            quantity: item.quantity,
-            image: item.productId.images[0]?.url || item.productId.images[0],
-            stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
-            maxPerPerson: 5
-        }));
-        dispatch(setCart(cartItems));
+        if (response.data && Array.isArray(response.data.items)) {
+            const cartItems = response.data.items.map(item => ({
+                productId: item.productId._id,
+                name: item.productId.name,
+                price: item.price,
+                selectedSize: item.selectedSize,
+                quantity: item.quantity,
+                image: item.productId.images[0]?.url || item.productId.images[0],
+                stock: item.productId.variants.find(v => v.size === item.selectedSize)?.stock || 0,
+                maxPerPerson: 5
+            }));
+            dispatch(setCart(cartItems));
+        } else {
+            // If items is not available, set an empty cart
+            dispatch(setCart([]));
+        }
     } catch (error) {
         console.error('Error refreshing cart:', error);
+        // Handle error by setting empty cart
+        dispatch(setCart([]));
     }
 };
   return (
     <div className="mini-cart position-relative">
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
-        className="btn btn-light position-relative" 
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="btn btn-light position-relative"
         aria-label="Shopping cart"
       >
         <i className="bi bi-bag"></i>
@@ -104,7 +111,7 @@ const MiniCart = () => {
         )}
       </button>
 
-      <Cart 
+      <Cart
         show={isOpen}
         onHide={() => setIsOpen(false)}
       />

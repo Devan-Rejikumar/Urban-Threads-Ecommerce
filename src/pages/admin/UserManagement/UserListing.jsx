@@ -18,13 +18,22 @@ const UserListing = () => {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        console.log('1111111111111111')
-        const response = await axios.get('http://localhost:5000/api/admin/users',{
-          withCredentials : true,
+        // First verify if the admin is authenticated
+        const verifyResponse = await axios.get('http://localhost:5000/api/admin/validate-token', {
+          withCredentials: true,
         });
-        console.log('asdfghjklqwertyuio',response)
+
+        if (!verifyResponse.data.valid) {
+          navigate('/admin-login');
+          return;
+        }
+
+        // If authenticated, fetch users
+        const response = await axios.get('http://localhost:5000/api/admin/users', {
+          withCredentials: true,
+        });
+
         if (Array.isArray(response.data)) {
-          
           setUsers(response.data);
         } else if (response.data && Array.isArray(response.data.users)) {
           setUsers(response.data.users);
@@ -34,11 +43,11 @@ const UserListing = () => {
         }
       } catch (error) {
         console.error('Error fetching users:', error);
-        if (error.message === 'Network Error') {
-          setError('Cannot connect to the server. Please make sure the backend server is running.');
-        } else if (error.response?.status === 401 || error.response?.status === 403) {
-          localStorage.removeItem('adminData');
+        
+        if (error.response?.status === 401 || error.response?.status === 403) {
           navigate('/admin-login');
+        } else if (error.message === 'Network Error') {
+          setError('Cannot connect to the server. Please make sure the backend server is running.');
         } else {
           setError(`Error fetching users: ${error.message}`);
         }
@@ -48,14 +57,8 @@ const UserListing = () => {
       }
     };
 
-    const adminData = localStorage.getItem('adminData');
-    if (!adminData) {
-      navigate('/admin-login');
-      return;
-    }
-
     fetchUsers();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -97,7 +100,6 @@ const UserListing = () => {
           )
         );
 
-        // Show success message
         await Swal.fire({
           title: 'Success!',
           text: `User has been ${action}ed successfully`,
@@ -107,9 +109,6 @@ const UserListing = () => {
         });
       }
     } catch (error) {
-      console.error(`Error ${action}ing user:`, error);
-      
-      // Check if it's an authentication error
       if (error.response?.status === 401 || error.response?.status === 403) {
         await Swal.fire({
           title: 'Session Expired',
@@ -117,10 +116,8 @@ const UserListing = () => {
           icon: 'warning',
           confirmButtonColor: '#3085d6'
         });
-        localStorage.removeItem('adminData');
         navigate('/admin-login');
       } else {
-        // Show error message for other types of errors
         await Swal.fire({
           title: 'Error!',
           text: `Failed to ${action} user: ${error.response?.data?.message || error.message}`,

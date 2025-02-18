@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Button, Modal, Badge, Form, InputGroup } from 'react-bootstrap';
+import { Container, Table, Button, Modal, Badge, Form, InputGroup, Pagination, Breadcrumb } from 'react-bootstrap';
 import axios from 'axios';
 import { Dropdown } from 'react-bootstrap';
 import { Search } from 'lucide-react';
@@ -14,14 +14,27 @@ const OrderManagement = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredOrders, setFilteredOrders] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [ordersPerPage] = useState(10);
+    const [totalOrders, setTotalOrders] = useState(0);
+    const ORDERS_PER_PAGE = 10;
+
 
     useEffect(() => {
         fetchOrders();
-    }, [filter]);
+    }, [filter, currentPage, searchTerm]);
 
     const fetchOrders = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/admin/orders?status=${filter}`, {
+            const response = await axios.get(
+                `http://localhost:5000/api/admin/orders`, {
+                params: {
+                    status: filter,
+                    page: currentPage,
+                    limit: ORDERS_PER_PAGE,
+                    search: searchTerm // Add search parameter
+                },
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'application/json'
@@ -30,12 +43,106 @@ const OrderManagement = () => {
 
             if (response.data.success) {
                 setOrders(response.data.orders);
+                setTotalOrders(response.data.totalOrders);
+                setTotalPages(Math.ceil(response.data.totalOrders / ORDERS_PER_PAGE));
             }
             setLoading(false);
         } catch (error) {
             console.error('Failed to fetch orders:', error);
             setLoading(false);
         }
+    };
+
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        setCurrentPage(1); 
+    };
+
+
+    const PaginationComponent = () => {
+        const items = [];
+        
+        // Previous button
+        items.push(
+            <Pagination.Prev
+                key="prev"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+            />
+        );
+
+        // First page
+        items.push(
+            <Pagination.Item
+                key={1}
+                active={currentPage === 1}
+                onClick={() => setCurrentPage(1)}
+            >
+                1
+            </Pagination.Item>
+        );
+
+        // Ellipsis and middle pages
+        if (totalPages > 5) {
+            if (currentPage > 3) {
+                items.push(<Pagination.Ellipsis key="ellipsis-1" />);
+            }
+
+            for (let page = Math.max(2, currentPage - 1); 
+                 page <= Math.min(totalPages - 1, currentPage + 1); 
+                 page++) {
+                items.push(
+                    <Pagination.Item
+                        key={page}
+                        active={currentPage === page}
+                        onClick={() => setCurrentPage(page)}
+                    >
+                        {page}
+                    </Pagination.Item>
+                );
+            }
+
+            if (currentPage < totalPages - 2) {
+                items.push(<Pagination.Ellipsis key="ellipsis-2" />);
+            }
+        } else {
+            // If less than 6 pages, show all
+            for (let page = 2; page <= totalPages; page++) {
+                items.push(
+                    <Pagination.Item
+                        key={page}
+                        active={currentPage === page}
+                        onClick={() => setCurrentPage(page)}
+                    >
+                        {page}
+                    </Pagination.Item>
+                );
+            }
+        }
+
+        // Last page (if more than one page)
+        if (totalPages > 1) {
+            items.push(
+                <Pagination.Item
+                    key={totalPages}
+                    active={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                >
+                    {totalPages}
+                </Pagination.Item>
+            );
+        }
+
+        // Next button
+        items.push(
+            <Pagination.Next
+                key="next"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+            />
+        );
+
+        return <Pagination>{items}</Pagination>;
     };
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -67,7 +174,7 @@ const OrderManagement = () => {
         try {
             const response = await axios.post(
                 `http://localhost:5000/api/admin/orders/${orderId}/accept-return`,
-                {action : 'accept'},
+                { action: 'accept' },
                 {
                     withCredentials: true,
                     headers: {
@@ -94,8 +201,10 @@ const OrderManagement = () => {
             console.log('Rejecting order with IDffffffff:', orderId);
             const response = await axios.post(
                 `http://localhost:5000/api/admin/orders/${orderId}/reject-return`,
-                { action: 'reject',
-                    rejectionReason: rejectionReason },
+                {
+                    action: 'reject',
+                    rejectionReason: rejectionReason
+                },
                 {
                     withCredentials: true,
                     headers: {
@@ -123,7 +232,7 @@ const OrderManagement = () => {
 
 
     const handleViewDetails = (order) => {
-        console.log('orderrrrrrrr',order.status)
+        console.log('orderrrrrrrr', order.status)
         setSelectedOrder(order);
         setShowModal(true);
     };
@@ -181,9 +290,12 @@ const OrderManagement = () => {
     if (loading) {
         return <div>Loading orders...</div>;
     }
-
     return (
         <Container fluid>
+            <Breadcrumb className="mt-3">
+                <Breadcrumb.Item href="/admin-dashboard">Dashboard</Breadcrumb.Item>
+                <Breadcrumb.Item active>Order Management</Breadcrumb.Item>
+            </Breadcrumb>
             <h2 className="my-4">Order Management</h2>
 
             <div className="d-flex gap-3 mb-3">
@@ -201,7 +313,10 @@ const OrderManagement = () => {
                 <Form.Select
                     className="w-25"
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
+                    onChange={(e) => {
+                        setFilter(e.target.value);
+                        setCurrentPage(1); // Reset to first page when changing filter
+                    }}
                 >
                     <option value="All">All Orders</option>
                     <option value="Pending">Pending</option>
@@ -218,72 +333,84 @@ const OrderManagement = () => {
                     <p className="text-muted">Try adjusting your search or filter criteria</p>
                 </div>
             ) : (
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Total Amount</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {displayOrders.map(order => (
-                            <tr key={order._id}>
-                                <td>#{order.orderId}</td>
-                                <td>₹{order.totalAmount}</td>
-                                <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                                <td>
-                                    <Badge bg={getStatusBadgeVariant(order.status)}>
-                                        {order.status}
-                                    </Badge>
-                                </td>
-                                <td>
-                                    {order.status === 'return_requested' ? (
-                                        <Button
-                                            variant="warning"
-                                            onClick={() => handleReturnAction(order)}
-                                        >
-                                            Handle Return Request
-                                        </Button>
-                                    ) : (
-                                        <Dropdown>
-                                            <Dropdown.Toggle
-                                                variant="secondary"
-                                                disabled={['cancelled', 'delivered', 'returned', 'return_requested'].includes(order.status)}
-                                            >
-                                                Change Status
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu>
-                                                {getStatusOptions(order.status).map(status => (
-                                                    <Dropdown.Item
-                                                        key={status}
-                                                        onClick={() => handleUpdateOrderStatus(order._id, status)}
-                                                    >
-                                                        {status}
-                                                    </Dropdown.Item>
-                                                ))}
-                                            </Dropdown.Menu>
-                                        </Dropdown>
-                                    )}
-                                </td>
-                                <td>
-                                    <Button
-                                        variant="info"
-                                        size="sm"
-                                        onClick={() => handleViewDetails(order)}
-                                    >
-                                        View Details
-                                    </Button>
-                                </td>
+                <>
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Total Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                                <th>Details</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </Table>
+                        </thead>
+                        <tbody>
+                            {displayOrders.map(order => (
+                                <tr key={order._id}>
+                                    <td>#{order.orderId}</td>
+                                    <td>₹{order.totalAmount}</td>
+                                    <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                                    <td>
+                                        <Badge bg={getStatusBadgeVariant(order.status)}>
+                                            {order.status}
+                                        </Badge>
+                                    </td>
+                                    <td>
+                                        {order.status === 'return_requested' ? (
+                                            <Button
+                                                variant="warning"
+                                                onClick={() => handleReturnAction(order)}
+                                            >
+                                                Handle Return Request
+                                            </Button>
+                                        ) : (
+                                            <Dropdown>
+                                                <Dropdown.Toggle
+                                                    variant="secondary"
+                                                    disabled={['cancelled', 'delivered', 'returned', 'return_requested'].includes(order.status)}
+                                                >
+                                                    Change Status
+                                                </Dropdown.Toggle>
+                                                <Dropdown.Menu>
+                                                    {getStatusOptions(order.status).map(status => (
+                                                        <Dropdown.Item
+                                                            key={status}
+                                                            onClick={() => handleUpdateOrderStatus(order._id, status)}
+                                                        >
+                                                            {status}
+                                                        </Dropdown.Item>
+                                                    ))}
+                                                </Dropdown.Menu>
+                                            </Dropdown>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <Button
+                                            variant="info"
+                                            size="sm"
+                                            onClick={() => handleViewDetails(order)}
+                                        >
+                                            View Details
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+
+                    {/* Pagination component placed here, after the table */}
+                    <div className="d-flex justify-content-between align-items-center mt-4">
+                        <div className="text-muted">
+                            Showing {((currentPage - 1) * ORDERS_PER_PAGE) + 1} to{' '}
+                            {Math.min(currentPage * ORDERS_PER_PAGE, totalOrders)} of {totalOrders} orders
+                        </div>
+                        <PaginationComponent />
+                    </div>
+                </>
             )}
 
+            {/* Return Modal */}
             <Modal show={showReturnModal} onHide={() => setShowReturnModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Handle Return Request</Modal.Title>
