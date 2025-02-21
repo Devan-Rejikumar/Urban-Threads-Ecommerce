@@ -10,6 +10,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+console.log('Google Client IDddddddddddddddddddddddddddd:', googleClientId);
 
 
 
@@ -17,7 +18,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <GoogleOAuthProvider clientId={googleClientId}>
+        <GoogleOAuthProvider clientId={googleClientId || ''}>
           <App />
         </GoogleOAuthProvider>
       </PersistGate>

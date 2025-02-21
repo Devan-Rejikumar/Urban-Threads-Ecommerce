@@ -87,8 +87,8 @@ const OfferForm = ({ initialValues, onSubmit, products, categories }) => (
                         <label>Apply To</label>
                         <Field name="applicableType" as="select" className="form-select">
                             <option value="">Select Type</option>
-                            <option value="product">Product</option>
-                            <option value="category">Category</option>
+                            <option value="Product">Product</option>
+                            <option value="Category">Category</option>
                         </Field>
                     </div>
 
@@ -96,7 +96,7 @@ const OfferForm = ({ initialValues, onSubmit, products, categories }) => (
                         <label>Select Item</label>
                         <Field name="applicableId" as="select" className="form-select">
                             <option value="">Select...</option>
-                            {values.applicableType === 'product' 
+                            {values.applicableType === 'Product' 
                                 ? products.map(p => (
                                     <option key={p._id} value={p._id}>{p.name}</option>
                                 ))

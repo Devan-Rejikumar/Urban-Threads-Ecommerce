@@ -5,9 +5,9 @@ import './AdminBreadcrumbs.css';
 const AdminBreadcrumbs = ({ additionalCrumb }) => {
   return (
     <nav className="breadcrumb">
-      <Link to="/dashboard">Dashboard</Link>
+      <Link to="/admin-dashboard">Dashboard</Link>
       <span className="separator">/</span>
-      <Link to="/categories">User</Link>
+      <Link to="/admin-dashboard/users">User</Link>
       {additionalCrumb && (
         <>
           <span className="separator">/</span>

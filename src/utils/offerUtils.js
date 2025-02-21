@@ -3,19 +3,19 @@ export const isValidOffer = (offer) => {
   return offer.discountValue > 0 && offer.discountValue <= 100;
 };
 
-export const getApplicableOffer = (product, categoryOffer) => {
-  const productOffer = product?.currentOffer;
-  
-  if (!isValidOffer(productOffer) && !isValidOffer(categoryOffer)) {
-    return null;
+export const getApplicableOffer = (productOffer, categoryOffer) => {
+  // Check if product has a valid offer (whether it's an ID or object)
+  if (productOffer && typeof productOffer === 'object' && isValidOffer(productOffer)) {
+    return productOffer;
   }
-
-  if (!isValidOffer(productOffer)) return categoryOffer;
-  if (!isValidOffer(categoryOffer)) return productOffer;
   
-  return productOffer.discountValue >= categoryOffer.discountValue ? productOffer : categoryOffer;
+  // If no valid product offer, check category offer
+  if (categoryOffer && isValidOffer(categoryOffer)) {
+    return categoryOffer;
+  }
+  
+  return null;
 };
-
 export const calculateDiscountedPrice = (originalPrice, offer) => {
   if (!isValidOffer(offer)) return originalPrice;
   const discount = (originalPrice * offer.discountValue) / 100;

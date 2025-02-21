@@ -89,10 +89,14 @@ nav {
   margin-bottom: 2rem;
 }
 
-.product-grid {
+
+
+.products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
+  width: 100%;
+  transition: all 0.3s ease;
 }
 
 .product-card {
@@ -594,19 +598,21 @@ Category Card Styles
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 40px; 
+  padding: 0 40px;
+  margin-bottom: 20px;
+  margin: 0 2rem; 
 }
 
 .products-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  overflow: hidden;
-  transition: transform 0.3s ease;
   width: 100%;
+  transition: all 0.3s ease;
 }
 
 .arrow-button {
-  background: rgba(0, 0, 0, 0.3); 
+  background: rgba(0, 0, 0, 0.3);
   color: white;
   border: none;
   border-radius: 50%;
@@ -620,7 +626,7 @@ Category Card Styles
   top: 50%;
   transform: translateY(-50%);
   z-index: 2;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .arrow-button:hover {
@@ -628,17 +634,24 @@ Category Card Styles
 }
 
 .arrow-button:disabled {
-  opacity: 0;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .arrow-button.left {
-  left: 0;
+  left: -10px;
 }
 
 .arrow-button.right {
-  right: 0;
+  right: -10px;
 }
+.pagination-indicator {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
 
 .category-image-container {
   position: relative;
@@ -693,6 +706,36 @@ Category Card Styles
   font-weight: 600;
   margin-bottom: 5px;
 }
+@media (max-width: 1280px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 
+@media (max-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .new-arrivals-container {
+    padding: 0 30px;
+  }
+}
+
+/* Animation for product transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.products-grid > * {
+  animation: fadeIn 0.3s ease-in-out;
+}
 
 

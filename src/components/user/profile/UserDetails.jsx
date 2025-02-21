@@ -9,8 +9,8 @@ import Footer from "../Footer"
 
 const Toast = ({ message, type, onClose }) => {
     return (
-        <div 
-            className={`alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`} 
+        <div
+            className={`alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`}
             style={{ zIndex: 1070 }}
             role="alert"
         >
@@ -122,7 +122,13 @@ const UserDetails = () => {
             const response = await axiosInstance.post('/auth/verify-contact-update-otp', {
                 type: updateType,
                 otp,
-                newValue: formData[updateType]
+                newValue: formData[updateType],
+                userData: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone
+                }
             });
 
             if (response.data.success) {
@@ -147,7 +153,7 @@ const UserDetails = () => {
     const validatePhoneNumber = (phone) => {
         // Remove any non-digit characters
         const cleanPhone = phone.replace(/\D/g, '');
-        
+
         // Check if empty
         if (!cleanPhone) {
             return "Phone number is required";
@@ -181,11 +187,11 @@ const UserDetails = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
+
         if (name === 'phone') {
             // Allow only numbers and limit to 10 digits
             const phoneValue = value.replace(/\D/g, '').slice(0, 10);
-            
+
             setFormData(prev => ({
                 ...prev,
                 [name]: phoneValue
@@ -234,7 +240,9 @@ const UserDetails = () => {
         try {
             const response = await axiosInstance.put('/auth/profile/update', {
                 firstName: formData.firstName,
-                lastName: formData.lastName
+                lastName: formData.lastName,
+                email: formData.email,   
+                phone: formData.phone
             });
 
             if (response.data.success) {
@@ -265,9 +273,9 @@ const UserDetails = () => {
         <Fragment>
             <Header />
             {toast.show && (
-                <Toast 
-                    message={toast.message} 
-                    type={toast.type} 
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
                     onClose={() => setToast({ show: false, message: '', type: 'success' })}
                 />
             )}

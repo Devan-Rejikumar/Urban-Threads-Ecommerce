@@ -155,135 +155,144 @@ const Category = () => {
     }
 
     return (
-      <div className="category-dashboard">
-        <div className="category-dashboard-header">
-          <div className="category-header-left">
-            <h1>Category</h1>
-            <AdminBreadcrumbs />
-          </div>
-          <div className="category-header-actions">
-            <button className="btn btn-primary" onClick={() => setAddTab(true)}>
-              <Plus size={16} className="btn-icon" />
-              Add New Category
-            </button>
+      <div className="container-fluid dashboard-container">
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="d-flex justify-content-between align-items-center">
+              <div className="dashboard-title">
+                <h1 className="h2 mb-2">Category Management</h1>
+                <AdminBreadcrumbs />
+              </div>
+              <button 
+                className="btn btn-primary d-flex align-items-center" 
+                onClick={() => setAddTab(true)}
+              >
+                <Plus size={18} className="me-2" />
+                Add New Category
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="category-search-bar">
-          <div className="search-icon-wrapper">
-            <Search size={16} className="search-icon" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search category..."
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-        </div>
-
-        <div className="category-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Category Name</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Added Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentCategories.map((item) => (
-                <tr key={item._id}>
-                  <td>
-                    <img
-                      src={item.image?.url || "/placeholder.svg?height=50&width=50"}
-                      alt={item.name}
-                      style={{
-                        width: '50px',
-                        height: '50px',
-                        objectFit: 'cover',
-                        borderRadius: '4px'
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <div className="product-name">
-                      <span>{item.name}</span>
-                    </div>
-                  </td>
-                  <td>{item.description}</td>
-                  <td>
-                    <span className={`status-badge ${item.isActive ? "active" : "blocked"}`}>
-                      {item.isActive ? "Active" : "Non-Active"}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-body">
+                <div className="search-container mb-4">
+                  <div className="input-group">
+                    <span className="input-group-text bg-transparent border-end-0">
+                      <Search size={18} />
                     </span>
-                  </td>
-                  <td>{format(new Date(item.createdAt), 'dd MMM yyyy')}</td>
-                  <td>
-                    <div
-                      className="action-wrapper"
-                      ref={(el) => actionMenuRefs.current[item._id] = el}
-                    >
-                      <div className="action-container">
-                        <button
-                          className="action-menu-trigger"
-                          onClick={() => toggleActionMenu(item._id)}
-                        >
-                          <MoreVertical size={20} className="vertical-dot" />
-                        </button>
-                        {openActionMenuId === item._id && (
-                          <div className="action-dropdown">
-                            <button
-                              className="dropdown-item"
-                              onClick={() => handleEdit(item)}
-                            >
-                              <Edit size={16} className="dropdown-icon" />
-                              Edit
-                            </button>
-                            <button
-                              className={`dropdown-item ${item.isActive ? 'active' : 'inactive'}`}
-                              onClick={() => handleActive(item)}
-                            >
-                              {item.isActive ? (
-                                <>
-                                  <Check size={16} className="dropdown-icon" />
-                                  Active
-                                </>
-                              ) : (
-                                <>
-                                  <X size={16} className="dropdown-icon" />
-                                  Inactive
-                                </>
-                              )}
-                            </button>
-                            <button
-                              className="dropdown-item delete"
-                              onClick={() => handleDelete(item)}
-                            >
-                              <Trash size={16} className="dropdown-icon" />
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {pageCount > 1 && (
-          <div className="pagination-wrapper">
-            <BasicPagination
-              page={page}
-              count={pageCount}
-              onChange={handlePageChange}
-            />
+                    <input
+                      type="text"
+                      className="form-control border-start-0 ps-0"
+                      placeholder="Search category..."
+                      value={searchQuery}
+                      onChange={handleSearch}
+                    />
+                  </div>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Image</th>
+                        <th>Category Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Added Date</th>
+                        <th className="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentCategories.map((item) => (
+                        <tr key={item._id}>
+                          <td>
+                            <img
+                              src={item.image?.url || "/placeholder.svg?height=50&width=50"}
+                              alt={item.name}
+                              className="category-image"
+                            />
+                          </td>
+                          <td>
+                            <span className="fw-medium">{item.name}</span>
+                          </td>
+                          <td>
+                            <span className="text-muted">{item.description}</span>
+                          </td>
+                          <td>
+                            <span className={`badge ${item.isActive ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger"}`}>
+                              {item.isActive ? "Active" : "Non-Active"}
+                            </span>
+                          </td>
+                          <td>{format(new Date(item.createdAt), 'dd MMM yyyy')}</td>
+                          <td>
+                            <div className="action-wrapper text-end" ref={(el) => actionMenuRefs.current[item._id] = el}>
+                              <div className="dropdown">
+                                <button
+                                  className="btn btn-light btn-sm"
+                                  onClick={() => toggleActionMenu(item._id)}
+                                >
+                                  <MoreVertical size={18} />
+                                </button>
+                                {openActionMenuId === item._id && (
+                                  <div className="dropdown-menu show position-absolute end-0">
+                                    <button
+                                      className="dropdown-item d-flex align-items-center"
+                                      onClick={() => handleEdit(item)}
+                                    >
+                                      <Edit size={16} className="me-2" />
+                                      Edit
+                                    </button>
+                                    <button
+                                      className={`dropdown-item d-flex align-items-center ${item.isActive ? 'text-success' : 'text-danger'}`}
+                                      onClick={() => handleActive(item)}
+                                    >
+                                      {item.isActive ? (
+                                        <>
+                                          <Check size={16} className="me-2" />
+                                          Active
+                                        </>
+                                      ) : (
+                                        <>
+                                          <X size={16} className="me-2" />
+                                          Inactive
+                                        </>
+                                      )}
+                                    </button>
+                                    <div className="dropdown-divider"></div>
+                                    <button
+                                      className="dropdown-item d-flex align-items-center text-danger"
+                                      onClick={() => handleDelete(item)}
+                                    >
+                                      <Trash size={16} className="me-2" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {pageCount > 1 && (
+                  <div className="d-flex justify-content-center mt-4">
+                    <BasicPagination
+                      page={page}
+                      count={pageCount}
+                      onChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     );
   };

@@ -4,23 +4,12 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 
 const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
     description: Yup.string().required('Description is required'),
-    discountType: Yup.string().required('Select discount type'),
-    discountValue: Yup.number()
-        .required('Enter discount value')
-        .positive('Must be positive')
-        .when('discountType', (discountType, schema) => {
-            console.log('Discount Typeddddddddddddddddd:', discountType); 
-            if (discountType === 'percentage') {
-                return schema.max(100, 'Cannot exceed 100%');
-            }
-            return schema;
-        }),
     applicableType: Yup.string().required('Select type'),
     applicableId: Yup.string().required('Select item'),
     startDate: Yup.date().required('Select start date'),
@@ -43,46 +32,87 @@ const CreateOffer = () => {
     const fetchData = async () => {
         try {
             const [productsRes, categoriesRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/products', {withCredentials : true}),
-                axios.get('http://localhost:5000/api/categories', {withCredentials : true})
+                axios.get('http://localhost:5000/api/products', { withCredentials: true }),
+                axios.get('http://localhost:5000/api/categories', { withCredentials: true })
             ]);
-            
+
             if (productsRes?.data) {
                 setProducts(productsRes.data);
             }
-            
+
             if (categoriesRes?.data) {
                 setCategories(categoriesRes.data);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
             if (error.response?.status === 401) {
-                toast.error('Please login to continue');
+                toast.error('Please login to continue', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
+                });
                 navigate('/admin/login');
             } else {
-                toast.error('Error fetching data: ' + (error.response?.data?.message || error.message));
+                toast.error('Error fetching data: ' + (error.response?.data?.message || error.message), {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
+                });
             }
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSubmit = async (values, { setSubmitting }) => {
+    const handleSubmit = async (values, { setSubmitting, resetForm }) => {
         try {
-          
-            const response = await axios.post('http://localhost:5000/api/admin/offers', values, {withCredentials : true});
-            console.log(response)
-            if(response.status === 201) {
-                toast.success('Offer created successfully');
-            navigate('/admin-dashboard/offers');
+            const response = await axios.post('http://localhost:5000/api/admin/offers', values, { withCredentials: true });
+
+            if (response.status === 201) {
+                toast.success('🎉 Offer created successfully!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colored",
+                    onClose: () => {
+                        navigate('/admin-dashboard/offers');
+                    }
+                });
+
+                // Optional: Reset form after successful submission
+                resetForm();
             }
         } catch (error) {
             console.error('Error creating offer:', error);
             if (error.response?.status === 401) {
-                toast.error('Please login to continue');
+                toast.error('Please login to continue', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
+                });
                 navigate('/admin-login');
             } else {
-                toast.error(error.response?.data?.message || 'Failed to create offer');
+                toast.error(error.response?.data?.message || 'Failed to create offer', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
+                });
             }
         } finally {
             setSubmitting(false);
@@ -93,6 +123,18 @@ const CreateOffer = () => {
 
     return (
         <div className="container mt-4">
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+            />
             <div className="card">
                 <div className="card-header">
                     <h3>Create New Offer</h3>
@@ -102,7 +144,6 @@ const CreateOffer = () => {
                         initialValues={{
                             name: '',
                             description: '',
-                            discountType: '',
                             discountValue: '',
                             applicableType: '',
                             applicableId: '',
@@ -126,17 +167,6 @@ const CreateOffer = () => {
                                         <Field name="description" as="textarea" className="form-control" />
                                         <ErrorMessage name="description" component="div" className="text-danger" />
                                     </div>
-
-                                    <div className="col-md-6">
-                                        <label className="form-label">Discount Type</label>
-                                        <Field name="discountType" as="select" className="form-select">
-                                            <option value="">Select Discount Type</option>
-                                            <option value="percentage">Percentage Off</option>
-                                            <option value="fixed">Fixed Amount Off</option>
-                                        </Field>
-                                        <ErrorMessage name="discountType" component="div" className="text-danger" />
-                                    </div>
-
                                     <div className="col-md-6">
                                         <label className="form-label">Discount Value</label>
                                         <Field name="discountValue" type="number" className="form-control" />
@@ -145,9 +175,9 @@ const CreateOffer = () => {
 
                                     <div className="col-md-6">
                                         <label className="form-label">Apply To</label>
-                                        <Field 
-                                            name="applicableType" 
-                                            as="select" 
+                                        <Field
+                                            name="applicableType"
+                                            as="select"
                                             className="form-select"
                                             onChange={(e) => {
                                                 setFieldValue('applicableType', e.target.value);
@@ -156,27 +186,28 @@ const CreateOffer = () => {
                                             }}
                                         >
                                             <option value="">Select Type</option>
-                                            <option value="product">Product</option>
-                                            <option value="category">Category</option>
+                                            <option value="Product">Product</option>
+                                            <option value="Category">Category</option>
                                         </Field>
                                         <ErrorMessage name="applicableType" component="div" className="text-danger" />
                                     </div>
 
                                     <div className="col-md-6">
                                         <label className="form-label">Select Item</label>
-                                        <Field 
-                                            name="applicableId" 
-                                            as="select" 
+                                        <Field
+                                            name="applicableId"
+                                            as="select"
                                             className="form-select"
                                             disabled={!values.applicableType}
                                         >
                                             <option value="">Select...</option>
-                                            {offerType === 'product' && products.map(p => (
+                                            {console.log('mmmmmmmmm', offerType)}
+                                            {offerType === 'Product' && products.map(p => (
                                                 <option key={p.id || p._id} value={p.id || p._id}>
                                                     {p.name}
                                                 </option>
                                             ))}
-                                            {offerType === 'category' && categories.map(c => (
+                                            {offerType === 'Category' && categories.map(c => (
                                                 <option key={c.id || c._id} value={c.id || c._id}>
                                                     {c.name}
                                                 </option>

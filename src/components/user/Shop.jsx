@@ -101,7 +101,12 @@ const Shop = () => {
         withCredentials: true
       });
       if (response.status === 200) {
-        const listedProducts = response.data.filter(product => product.isListed);
+        // Check if response.data is an array or an object with a products property
+        const productsArray = Array.isArray(response.data) 
+          ? response.data 
+          : response.data.products || [];
+          
+        const listedProducts = productsArray.filter(product => product.isListed);
         setProducts(listedProducts);
       }
     } catch (error) {

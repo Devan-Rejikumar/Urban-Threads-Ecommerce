@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 const AdminBreadcrumbs = ({ additionalCrumb }) => {
   return (
     <nav className="breadcrumb">
-      <Link to="/dashboard">Dashboard</Link>
+      <Link to="/admin-dashboard">Dashboard</Link>
       <span className="separator">/</span>
-      <Link to="/categories">Categories</Link>
+      <Link to="/admin-dashboard/categories">Categories</Link>
       {additionalCrumb && (
         <>
           <span className="separator">/</span>

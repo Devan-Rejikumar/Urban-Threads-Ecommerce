@@ -125,15 +125,22 @@ const SalesReport = () => {
         yesterday: {
             label: 'Yesterday',
             getRange: () => {
+                // Get current date in local timezone
                 const today = new Date();
+                // Set to start of today
+                today.setHours(0, 0, 0, 0);
+                
+                // Get yesterday by subtracting one day
                 const yesterday = new Date(today);
                 yesterday.setDate(yesterday.getDate() - 1);
-                yesterday.setHours(23, 59, 59, 999);
-                const startOfYesterday = new Date(yesterday);
-                startOfYesterday.setHours(0, 0, 0, 0);
+                
+                // Get end of yesterday
+                const endOfYesterday = new Date(yesterday);
+                endOfYesterday.setHours(23, 59, 59, 999);
+                
                 return {
-                    start: startOfYesterday.toISOString().split('T')[0],
-                    end: yesterday.toISOString().split('T')[0]
+                    start: yesterday.toISOString().split('T')[0],
+                    end: endOfYesterday.toISOString().split('T')[0]
                 };
             }
         },

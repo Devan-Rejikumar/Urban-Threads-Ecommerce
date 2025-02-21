@@ -164,7 +164,7 @@ const UserListing = () => {
 
       {filteredUsers.length > 0 ? (
         <table>
-          <caption>User Listing</caption>
+          {/* <caption>User Listing</caption> */}
           <thead>
             <tr>
               <th>Name</th>

@@ -164,12 +164,7 @@ const ProductDetail = () => {
     .filter(p => p._id !== productId)
     .slice(0, 4);
 
-  const reviews = [
-    { author: "Belwin Raphel", rating: 5, comment: "Great product! Highly recommended." },
-    { author: "Al Ameen", rating: 4, comment: "Good quality, but a bit pricey." },
-    { author: "Nanda Kumar", rating: 5, comment: "Excellent service and fast delivery." }
-  ];
-
+ 
   const renderStars = (rating) => {
     return [...Array(5)].map((_, i) => (
       <span key={i} className={`star ${i < rating ? 'filled' : ''}`}>★</span>
@@ -265,7 +260,7 @@ const ProductDetail = () => {
           <div className="product-info">
             <div className="rating-container">
               <div className="stars">{renderStars(rating)}</div>
-              <span className="rating-count">{reviews.length} Ratings</span>
+              <span className="rating-count">{50} Ratings</span>
             </div>
 
             <h1 className="product-name">{name}</h1>
@@ -375,24 +370,7 @@ const ProductDetail = () => {
               <p>{description}</p>
             </div>
 
-            <div className="reviews-section">
-              <h2>Customer Reviews</h2>
-              {reviews.length > 0 ? (
-                <div className="reviews-list">
-                  {reviews.map((review, idx) => (
-                    <div key={idx} className="review">
-                      <div className="review-header">
-                        <div className="review-rating">{renderStars(review.rating)}</div>
-                        <span className="review-author">{review.author}</span>
-                      </div>
-                      <p className="review-comment">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="no-reviews">No reviews yet</p>
-              )}
-            </div>
+            
           </div>
         </div>
 
